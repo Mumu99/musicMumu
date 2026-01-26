@@ -1502,7 +1502,7 @@
           </div>
           <div class="title-text">
             <h1 data-i18n="appTitle">木木的音乐站</h1>
-            <p data-i18n="authorLabel">作者：Mumu</p>
+            <p data-i18n="authorLabel">作者：Mumu </p>
           </div>
         </div>
         <div class="header-controls">
@@ -1997,7 +1997,7 @@
       ;(function () {
         const translations = {
           zh: {
-            appTitle: '木木的音乐站',
+            appTitle: '木木的音乐站 <img src="svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
             authorLabel: '作者：Mumu',
             shortcutHint:
               '快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 · L 切换歌词效果',
@@ -2069,7 +2069,7 @@
             modalCancel: '取消'
           },
           en: {
-            appTitle: 'Mumu Music Station',
+            appTitle: 'Mumu Music Station <img src="svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
             authorLabel: 'Author: Mumu',
             shortcutHint:
               'Shortcuts: Space Play/Pause · ←/→ Seek · ↑/↓ Volume · N/P Track · F Fav · L Lyrics FX',
@@ -2238,7 +2238,13 @@
           })
           document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.dataset.i18n
-            if (key) el.textContent = t(key)
+            if (key) {
+              if (key === 'appTitle') {
+                el.innerHTML = t(key)
+              } else {
+                el.textContent = t(key)
+              }
+            }
           })
           dom.searchInput.placeholder =
             lang === 'zh'
