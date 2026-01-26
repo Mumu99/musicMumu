@@ -2676,7 +2676,62 @@
             showToast(t('toastDownloadNotReady'))
             return
           }
-          window.open(tr.audioUrl, '_blank')
+          
+          const fileName = `${tr.title || 'Unknown'} - ${tr.artist || 'Unknown'}.mp3`.replace(/[\\/:*?"<>|]/g, '_')
+          
+          // 由于跨域限制，使用 CORS 代理来下载
+          // 这里使用公共的 CORS 代理服务
+          const corsProxies = [
+            'https://api.codetabs.com/v1/proxy?quest=',
+            'https://corsproxy.io/?',
+            'https://api.allorigins.win/raw?url='
+          ]
+          
+          const downloadingMsg = state.language === 'zh' ? '下载中，请稍候...' : 'Downloading, please wait...'
+          showToast(downloadingMsg)
+          
+          // 尝试使用代理下载
+          async function tryDownloadWithProxy(proxyIndex = 0) {
+            if (proxyIndex >= corsProxies.length) {
+              // 所有代理都失败了，回退到直接打开链接
+              const fallbackMsg = state.language === 'zh' 
+                ? '无法直接下载，已在新窗口打开，请手动保存' 
+                : 'Cannot download directly, opened in new tab, please save manually'
+              showToast(fallbackMsg)
+              window.open(tr.audioUrl, '_blank')
+              return
+            }
+            
+            const proxyUrl = corsProxies[proxyIndex] + encodeURIComponent(tr.audioUrl)
+            
+            try {
+              const response = await fetch(proxyUrl)
+              if (!response.ok) throw new Error('Proxy request failed')
+              
+              const blob = await response.blob()
+              const blobUrl = URL.createObjectURL(blob)
+              
+              const a = document.createElement('a')
+              a.style.display = 'none'
+              a.href = blobUrl
+              a.download = fileName
+              document.body.appendChild(a)
+              a.click()
+              
+              setTimeout(() => {
+                document.body.removeChild(a)
+                URL.revokeObjectURL(blobUrl)
+              }, 100)
+              
+              const successMsg = state.language === 'zh' ? '下载完成' : 'Download complete'
+              showToast(successMsg)
+            } catch (error) {
+              console.log(`Proxy ${proxyIndex + 1} failed, trying next...`)
+              tryDownloadWithProxy(proxyIndex + 1)
+            }
+          }
+          
+          tryDownloadWithProxy()
         }
 
         function addCurrentToPlaylist() {
