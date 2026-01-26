@@ -268,20 +268,7 @@
         box-shadow: 0 14px 34px rgba(0, 0, 0, 0.85);
         z-index: 0;
       }
-      .panel::before {
-        content: '';
-        position: absolute;
-        inset: -25%;
-        background: radial-gradient(
-          circle at 0 0,
-          rgba(255, 255, 255, 0.08),
-          transparent 60%
-        );
-        opacity: 0.5;
-        pointer-events: none;
-        z-index: -1;
-      }
-
+      
       .panel-header {
         display: flex;
         justify-content: space-between;
@@ -640,6 +627,34 @@
         to {
           transform: rotate(360deg);
         }
+      }
+
+      /* 音波动画效果 */
+      .audio-wave {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 16px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .audio-wave.playing {
+        opacity: 1;
+      }
+      .audio-wave .bar {
+        width: 3px;
+        background: linear-gradient(to top, var(--accent-blue), var(--accent-pink));
+        border-radius: 2px;
+        animation: waveBar 0.6s ease-in-out infinite;
+      }
+      .audio-wave .bar:nth-child(1) { height: 40%; animation-delay: 0s; }
+      .audio-wave .bar:nth-child(2) { height: 70%; animation-delay: 0.1s; }
+      .audio-wave .bar:nth-child(3) { height: 50%; animation-delay: 0.2s; }
+      .audio-wave .bar:nth-child(4) { height: 80%; animation-delay: 0.15s; }
+      .audio-wave .bar:nth-child(5) { height: 60%; animation-delay: 0.25s; }
+      @keyframes waveBar {
+        0%, 100% { transform: scaleY(0.4); }
+        50% { transform: scaleY(1); }
       }
 
       .player-main {
@@ -1660,6 +1675,13 @@
                     data-i18n="playerStatusIdle"
                   >
                     空闲
+                  </div>
+                  <div id="audio-wave" class="audio-wave">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
                   </div>
                 </div>
               </div>
@@ -3442,6 +3464,7 @@
           dom.trackSourcePill = $('track-source-pill')
           dom.trackQualityPill = $('track-quality-pill')
           dom.playerStatus = $('player-status')
+          dom.audioWave = $('audio-wave')
           dom.playBtn = $('play-btn')
           dom.prevBtn = $('prev-btn')
           dom.nextBtn = $('next-btn')
@@ -3596,12 +3619,14 @@
             state.isPlaying = true
             dom.playBtn.textContent = '⏸'
             dom.playerStatus.textContent = t('playerStatusPlaying')
+            dom.audioWave.classList.add('playing')
           })
           dom.audio.addEventListener('pause', () => {
             state.isPlaying = false
             dom.playBtn.textContent = '▶'
             dom.playerStatus.textContent = t('playerStatusPaused')
             audioLevel = 0
+            dom.audioWave.classList.remove('playing')
           })
           dom.audio.addEventListener('ended', () => {
             audioLevel = 0
