@@ -1275,6 +1275,54 @@
         margin-top: 4px;
       }
 
+      /* 歌单选择列表 */
+      .playlist-choices {
+        max-height: 200px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        background: rgba(4, 6, 20, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .playlist-choices::-webkit-scrollbar {
+        width: 5px;
+      }
+      .playlist-choices::-webkit-scrollbar-thumb {
+        background: rgba(130, 190, 255, 0.6);
+        border-radius: 999px;
+      }
+      .playlist-choice-item {
+        padding: 10px 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--text-main);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        transition: background 0.15s;
+      }
+      .playlist-choice-item:last-child {
+        border-bottom: none;
+      }
+      .playlist-choice-item:hover {
+        background: rgba(104, 174, 255, 0.15);
+      }
+      .playlist-choice-item .choice-icon {
+        font-size: 14px;
+      }
+      .playlist-choice-item .choice-count {
+        margin-left: auto;
+        font-size: 10px;
+        color: var(--text-sub);
+      }
+      .playlist-choices-empty {
+        padding: 20px;
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-sub);
+      }
+
       /* 快捷键说明 */
       .shortcut-grid {
         display: grid;
@@ -1592,6 +1640,13 @@
                       ❤
                     </button>
                     <button
+                      id="add-to-playlist-btn"
+                      class="btn btn-secondary btn-icon ripple-target"
+                      title="添加到歌单"
+                    >
+                      ＋
+                    </button>
+                    <button
                       id="download-btn"
                       class="btn btn-secondary btn-icon ripple-target"
                       title="下载"
@@ -1808,6 +1863,39 @@
       </div>
     </div>
 
+    <!-- 添加到歌单弹窗 -->
+    <div id="add-to-playlist-modal" class="modal-backdrop">
+      <div class="modal ripple-target">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <div class="modal-title-icon">📁</div>
+            <span data-i18n="modalAddToPlaylistTitle">添加到歌单</span>
+          </div>
+          <button id="add-to-playlist-close" class="modal-close-btn">×</button>
+        </div>
+        <p class="modal-desc" data-i18n="modalAddToPlaylistDesc">
+          选择要添加到的歌单：
+        </p>
+        <div id="playlist-choices" class="playlist-choices"></div>
+        <div class="modal-actions">
+          <button
+            id="add-to-playlist-cancel"
+            class="btn btn-ghost ripple-target"
+            data-i18n="modalCancel"
+          >
+            取消
+          </button>
+          <button
+            id="add-to-playlist-new"
+            class="btn btn-secondary ripple-target"
+            data-i18n="newPlaylist"
+          >
+            新建歌单
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 快捷键说明弹窗 -->
     <div id="shortcut-modal" class="modal-backdrop">
       <div class="modal ripple-target">
@@ -1952,6 +2040,9 @@
             sourceKuwo: '酷我',
             modalNewPlaylistTitle: '新建歌单',
             modalNewPlaylistDesc: '给你的歌单取一个可爱的名字吧～',
+            modalAddToPlaylistTitle: '添加到歌单',
+            modalAddToPlaylistDesc: '选择要添加到的歌单：',
+            modalAddToPlaylistEmpty: '还没有歌单，先新建一个吧~',
             modalConfirm: '确定',
             modalCancel: '取消'
           },
@@ -2024,6 +2115,9 @@
             sourceKuwo: 'Kuwo',
             modalNewPlaylistTitle: 'Create Playlist',
             modalNewPlaylistDesc: 'Give your playlist a cute name!',
+            modalAddToPlaylistTitle: 'Add to Playlist',
+            modalAddToPlaylistDesc: 'Choose a playlist:',
+            modalAddToPlaylistEmpty: 'No playlists yet. Create one first!',
             modalConfirm: 'Confirm',
             modalCancel: 'Cancel'
           }
@@ -2758,6 +2852,7 @@
           }
           updateMainFavButton()
           renderPlaylistList()
+          saveFavorites()
         }
 
         function handleDownloadCurrent() {
@@ -2846,6 +2941,7 @@
           }
           pl.tracks.push(track)
           renderPlaylistList()
+          savePlaylists()
           showToast(t('toastAddedToPlaylist'))
         }
 
@@ -3033,6 +3129,7 @@
               }
               renderPlaylistList()
               updateMainFavButton()
+              saveFavorites()
             })
 
             item.appendChild(index)
@@ -3056,6 +3153,82 @@
         function closePlaylistModal() {
           dom.playlistModal.classList.remove('show')
         }
+
+        // ========== 添加到歌单弹窗 ==========
+        function openAddToPlaylistModal() {
+          const track = state.currentTrack
+          if (!track) {
+            showToast(t('toastNoCurrentTrack'))
+            return
+          }
+          renderPlaylistChoices()
+          dom.addToPlaylistModal.classList.add('show')
+        }
+
+        function closeAddToPlaylistModal() {
+          dom.addToPlaylistModal.classList.remove('show')
+        }
+
+        function renderPlaylistChoices() {
+          const wrap = dom.playlistChoices
+          wrap.innerHTML = ''
+          
+          if (!state.playlists.length) {
+            const empty = document.createElement('div')
+            empty.className = 'playlist-choices-empty'
+            empty.textContent = t('modalAddToPlaylistEmpty')
+            wrap.appendChild(empty)
+            return
+          }
+
+          state.playlists.forEach(pl => {
+            const item = document.createElement('div')
+            item.className = 'playlist-choice-item'
+            
+            const icon = document.createElement('span')
+            icon.className = 'choice-icon'
+            icon.textContent = '📁'
+            
+            const name = document.createElement('span')
+            name.textContent = pl.name
+            
+            const count = document.createElement('span')
+            count.className = 'choice-count'
+            count.textContent = pl.tracks.length + (state.language === 'zh' ? ' 首' : ' songs')
+            
+            item.appendChild(icon)
+            item.appendChild(name)
+            item.appendChild(count)
+            
+            item.addEventListener('click', () => {
+              addTrackToPlaylist(pl.id)
+            })
+            
+            wrap.appendChild(item)
+          })
+        }
+
+        function addTrackToPlaylist(plId) {
+          const track = state.currentTrack
+          if (!track) {
+            showToast(t('toastNoCurrentTrack'))
+            return
+          }
+          const pl = state.playlists.find(p => p.id === plId)
+          if (!pl) return
+          
+          if (pl.tracks.some(tk => tk.uid === track.uid)) {
+            showToast(t('toastAlreadyInList'))
+            return
+          }
+          
+          pl.tracks.push(track)
+          savePlaylists()
+          closeAddToPlaylistModal()
+          renderPlaylistList()
+          showToast(t('toastAddedToPlaylist'))
+        }
+
         function createPlaylist() {
           let name = dom.playlistNameInput.value.trim()
           if (!name)
@@ -3071,7 +3244,55 @@
           dom.playlistSelect.value = pl.id
           closePlaylistModal()
           renderPlaylistList()
+          savePlaylists()
           showToast(t('toastPlaylistCreated'))
+        }
+
+        // ========== localStorage 持久化 ==========
+        function savePlaylists() {
+          try {
+            localStorage.setItem('Mumu-music-playlists', JSON.stringify(state.playlists))
+          } catch (e) {
+            console.warn('保存歌单失败:', e)
+          }
+        }
+
+        function loadPlaylists() {
+          try {
+            const data = localStorage.getItem('Mumu-music-playlists')
+            if (data) {
+              state.playlists = JSON.parse(data)
+              // 重建下拉选项
+              dom.playlistSelect.innerHTML = ''
+              state.playlists.forEach(pl => {
+                const opt = document.createElement('option')
+                opt.value = pl.id
+                opt.textContent = pl.name
+                dom.playlistSelect.appendChild(opt)
+              })
+            }
+          } catch (e) {
+            console.warn('加载歌单失败:', e)
+          }
+        }
+
+        function saveFavorites() {
+          try {
+            localStorage.setItem('Mumu-music-favorites', JSON.stringify(state.favorites))
+          } catch (e) {
+            console.warn('保存收藏失败:', e)
+          }
+        }
+
+        function loadFavorites() {
+          try {
+            const data = localStorage.getItem('Mumu-music-favorites')
+            if (data) {
+              state.favorites = JSON.parse(data)
+            }
+          } catch (e) {
+            console.warn('加载收藏失败:', e)
+          }
         }
 
         function canAutoLoadMore() {
@@ -3249,6 +3470,13 @@
           dom.playlistConfirmBtn = $('playlist-confirm-btn')
           dom.playlistCancelBtn = $('playlist-cancel-btn')
           dom.playlistCloseBtn = $('playlist-close')
+
+          dom.addToPlaylistBtn = $('add-to-playlist-btn')
+          dom.addToPlaylistModal = $('add-to-playlist-modal')
+          dom.addToPlaylistClose = $('add-to-playlist-close')
+          dom.addToPlaylistCancel = $('add-to-playlist-cancel')
+          dom.addToPlaylistNew = $('add-to-playlist-new')
+          dom.playlistChoices = $('playlist-choices')
 
           dom.shortcutToggleBtn = $('shortcut-toggle-btn')
           dom.shortcutModal = $('shortcut-modal')
@@ -3428,6 +3656,18 @@
           })
           dom.addCurrentBtn.addEventListener('click', addCurrentToPlaylist)
 
+          // 添加到歌单弹窗相关事件
+          dom.addToPlaylistBtn.addEventListener('click', openAddToPlaylistModal)
+          dom.addToPlaylistClose.addEventListener('click', closeAddToPlaylistModal)
+          dom.addToPlaylistCancel.addEventListener('click', closeAddToPlaylistModal)
+          dom.addToPlaylistNew.addEventListener('click', () => {
+            closeAddToPlaylistModal()
+            openPlaylistModal()
+          })
+          dom.addToPlaylistModal.addEventListener('click', e => {
+            if (e.target === dom.addToPlaylistModal) closeAddToPlaylistModal()
+          })
+
           dom.shortcutToggleBtn.addEventListener('click', () => {
             dom.shortcutModal.classList.add('show')
           })
@@ -3455,14 +3695,16 @@
             const typing = tag === 'input' || tag === 'textarea'
             const playlistOpen = dom.playlistModal.classList.contains('show')
             const shortcutOpen = dom.shortcutModal.classList.contains('show')
+            const addToPlaylistOpen = dom.addToPlaylistModal.classList.contains('show')
 
             if (e.key === 'Escape') {
               if (playlistOpen) closePlaylistModal()
               if (shortcutOpen) dom.shortcutModal.classList.remove('show')
+              if (addToPlaylistOpen) closeAddToPlaylistModal()
               return
             }
 
-            if (playlistOpen || shortcutOpen) {
+            if (playlistOpen || shortcutOpen || addToPlaylistOpen) {
               return
             }
 
@@ -3514,12 +3756,17 @@
             const lg = localStorage.getItem('Mumu-music-lang')
             if (lg) state.language = lg
           } catch (e) {}
+          // 加载持久化的歌单和收藏
+          loadPlaylists()
+          loadFavorites()
           setupParticles()
           setupRipple()
           setupEvents()
           setLanguage(state.language)
           setPlaymodeUI()
           dom.audio.volume = parseFloat(dom.volumeSlider.value)
+          // 初始化后渲染一次歌单列表
+          renderPlaylistList()
         }
 
         document.addEventListener('DOMContentLoaded', init)
