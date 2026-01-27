@@ -286,15 +286,15 @@
       }
       .panel-title .icon {
         font-size: 14px;
-        display: inline-flex;
-        align-items: center;
-      }
-      .panel-title .icon svg.icon {
         width: 16px;
         height: 16px;
-        max-width: 16px;
-        max-height: 16px;
-        vertical-align: middle;
+        min-width: 16px;
+        min-height: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        overflow: visible;
       }
       .chip {
         font-size: 11px;
