@@ -1,6 +1,6 @@
 // Service Worker for 木木的音乐站
 // 每次发版时更新此版本号
-const CACHE_NAME = 'mumu-music-v8';
+const CACHE_NAME = 'mumu-music-v9';
 const urlsToCache = [
   './',
   './index.html',

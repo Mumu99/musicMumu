@@ -3778,13 +3778,24 @@
             return
           }
           
+          // 直接分享歌曲的音频链接
+          if (!tr.audioUrl) {
+            showToast(t('toastDownloadNotReady'))
+            return
+          }
+          
+          const songInfo = `${tr.title} - ${tr.artist}`
+          const shareText = state.language === 'zh' 
+            ? `🎵 ${songInfo}\n${tr.audioUrl}` 
+            : `🎵 ${songInfo}\n${tr.audioUrl}`
+          
           // 构建分享数据
           const shareData = {
-            title: `${tr.title} - ${tr.artist}`,
+            title: songInfo,
             text: state.language === 'zh' 
-              ? `🎵 我在木木音乐站发现了一首好听的歌：${tr.title} - ${tr.artist}` 
-              : `🎵 I found a great song on Mumu Music: ${tr.title} - ${tr.artist}`,
-            url: window.location.href
+              ? `🎵 我在木木音乐站发现了一首好听的歌：${songInfo}` 
+              : `🎵 I found a great song on Mumu Music: ${songInfo}`,
+            url: tr.audioUrl
           }
           
           // 尝试使用 Web Share API（移动端更好的体验）
@@ -3802,7 +3813,6 @@
           }
           
           // 回退到复制到剪贴板
-          const shareText = `${shareData.text}\n${shareData.url}`
           try {
             await navigator.clipboard.writeText(shareText)
             showToast(t('toastShareCopied'))
