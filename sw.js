@@ -1,10 +1,10 @@
 // Service Worker for 木木的音乐站
-const CACHE_NAME = 'mumu-music-v1';
+const CACHE_NAME = 'mumu-music-v2';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/mumu.gif'
+  './',
+  './index.html',
+  './manifest.json',
+  './mumu.gif'
 ];
 
 // 安装 Service Worker
@@ -73,7 +73,7 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => {
         // 离线时返回离线页面（可选）
-        return caches.match('/index.html');
+        return caches.match('./index.html');
       })
   );
 });
