@@ -11,7 +11,27 @@
       href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600&family=Nunito:wght@400;600&display=swap"
       rel="stylesheet"
     />
+    <!-- iconfont 图标 -->
+    <script src="//at.alicdn.com/t/c/font_2994534_6rijd5vq1f6.js"></script>
     <style>
+      /* iconfont 图标样式 */
+      .icon {
+        width: 1em;
+        height: 1em;
+        vertical-align: middle;
+        fill: currentColor;
+        overflow: hidden;
+      }
+      .btn-icon .icon,
+      .play-btn .icon {
+        font-size: 1.2em;
+      }
+      .fullscreen-btn-lg .icon {
+        font-size: 1.4em;
+      }
+      .fullscreen-play-btn .icon {
+        font-size: 1.6em;
+      }
       :root {
         --bg-dark: #0c0d0f;
         --bg-secondary: #141517;
@@ -266,6 +286,11 @@
       }
       .panel-title .icon {
         font-size: 16px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .panel-title .icon svg.icon {
+        vertical-align: middle;
       }
       .chip {
         font-size: 11px;
@@ -385,6 +410,8 @@
         margin-right: 8px;
         color: var(--text-sub);
         text-shadow: none;
+        display: inline-flex;
+        align-items: center;
       }
       .search-row .input {
         border: none;
@@ -804,6 +831,10 @@
         font-size: 18px;
         border-radius: 50%;
         background: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
       }
       .control-main .play-btn:hover {
         background: var(--accent-strong);
@@ -882,6 +913,50 @@
         letter-spacing: 0;
       }
 
+      /* 歌词炫酷效果 (按 L 切换) */
+      .lyrics-container.alt-style {
+        background: linear-gradient(180deg, rgba(5, 5, 8, 0.98) 0%, rgba(15, 15, 20, 0.98) 100%);
+      }
+      .lyrics-container.alt-style .lyrics-line {
+        font-size: 15px;
+        opacity: 0.35;
+        color: rgba(255, 255, 255, 0.5);
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: scale(0.95);
+      }
+      .lyrics-container.alt-style .lyrics-line:hover {
+        opacity: 0.6;
+        color: rgba(255, 255, 255, 0.7);
+        transform: scale(0.98);
+      }
+      .lyrics-container.alt-style .lyrics-line.active {
+        opacity: 1;
+        transform: scale(1.12);
+        font-size: 18px;
+        font-weight: 600;
+        color: #fff;
+        text-shadow: 
+          0 0 10px rgba(49, 194, 124, 0.8),
+          0 0 30px rgba(49, 194, 124, 0.6),
+          0 0 60px rgba(49, 194, 124, 0.4);
+        animation: lyricPulse 1.5s ease-in-out infinite;
+      }
+      @keyframes lyricPulse {
+        0%, 100% {
+          text-shadow: 
+            0 0 10px rgba(49, 194, 124, 0.8),
+            0 0 30px rgba(49, 194, 124, 0.6),
+            0 0 60px rgba(49, 194, 124, 0.4);
+        }
+        50% {
+          text-shadow: 
+            0 0 15px rgba(49, 194, 124, 1),
+            0 0 40px rgba(49, 194, 124, 0.8),
+            0 0 80px rgba(49, 194, 124, 0.5),
+            0 0 120px rgba(74, 222, 128, 0.3);
+        }
+      }
+
       /* 右侧播放列表面板 */
       .playlist-panel {
         background: var(--bg-secondary);
@@ -889,7 +964,7 @@
         flex-direction: column;
         min-height: 0;
         z-index: 1;
-        overflow: visible;
+        overflow: hidden;
       }
 
       .playlist-tabs {
@@ -1457,6 +1532,10 @@
           font-size: 15px;
           padding: 10px 8px;
         }
+        .progress-bar-wrapper {
+          width: 150px;
+          flex: none;
+        }
         .shortcut-grid {
           grid-template-columns: 1fr;
         }
@@ -1735,6 +1814,10 @@
         height: 72px;
         font-size: 28px;
         border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
       }
       .fullscreen-volume {
         width: 120px;
@@ -1926,7 +2009,7 @@
         <section class="panel search-panel ripple-target">
           <div class="panel-header">
             <div class="panel-title">
-              <span class="icon">🔍</span>
+              <span class="icon"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-sousuo"></use></svg></span>
               <span data-i18n="searchTitle">歌曲搜索</span>
             </div>
             <span class="chip" data-i18n="searchSubtitle"
@@ -1935,7 +2018,7 @@
           </div>
           <div class="search-panel-content">
             <div class="search-row ripple-target">
-              <span class="search-prefix">🔍</span>
+              <span class="search-prefix"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-sousuo"></use></svg></span>
               <input
                 id="search-input"
                 class="input"
@@ -2043,7 +2126,7 @@
                       id="track-quality-pill"
                       class="lossless-pill"
                       style="display: none"
-                      >LOSSLESS</span
+                      >超清母带</span
                     >
                   </div>
                 </div>
@@ -2054,7 +2137,7 @@
                       class="btn btn-secondary btn-icon ripple-target"
                       title="收藏 (F)"
                     >
-                      ❤
+                      <svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiai"></use></svg>
                     </button>
                     <button
                       id="add-to-playlist-btn"
@@ -2068,7 +2151,7 @@
                       class="btn btn-secondary btn-icon ripple-target"
                       title="下载"
                     >
-                      ⬇
+                      <svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiazai"></use></svg>
                     </button>
                   </div>
                   <div
@@ -2107,25 +2190,25 @@
                       class="btn btn-secondary btn-icon ripple-target"
                       title="上一首 (P)"
                     >
-                      ⏮
+                      <svg class="icon" aria-hidden="true"><use xlink:href="#icon-shangyishou"></use></svg>
                     </button>
                     <button
                       id="play-btn"
                       class="btn play-btn ripple-target"
                       title="播放/暂停 (Space)"
                     >
-                      ▶
+                      <svg class="icon" aria-hidden="true"><use xlink:href="#icon-icon_play"></use></svg>
                     </button>
                     <button
                       id="next-btn"
                       class="btn btn-secondary btn-icon ripple-target"
                       title="下一首 (N)"
                     >
-                      ⏭
+                      <svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiayishou"></use></svg>
                     </button>
                   </div>
                   <div class="control-secondary">
-                    <span>🔊</span>
+                    <span><svg class="icon" aria-hidden="true"><use xlink:href="#icon-yinliang"></use></svg></span>
                     <input
                       id="volume-slider"
                       class="volume-slider"
@@ -2160,7 +2243,7 @@
         <section class="panel playlist-panel ripple-target">
           <div class="panel-header">
             <div class="panel-title">
-              <span class="icon">📜</span>
+              <span class="icon"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-20gf-playlistHeart"></use></svg></span>
               <span data-i18n="playlistTitle">播放列表</span>
             </div>
             <div class="playlist-tabs ripple-target">
@@ -2219,21 +2302,21 @@
                     data-mode="list"
                     title="列表循环"
                   >
-                    🔁
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-xunhuanbofang-"></use></svg>
                   </button>
                   <button
                     class="playmode-btn ripple-target"
                     data-mode="single"
                     title="单曲循环"
                   >
-                    🔂
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-danquxunhuan"></use></svg>
                   </button>
                   <button
                     class="playmode-btn ripple-target"
                     data-mode="shuffle"
                     title="随机播放"
                   >
-                    🔀
+                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-suijibofang"></use></svg>
                   </button>
                 </div>
               </div>
@@ -2435,15 +2518,15 @@
           </div>
           <div class="fullscreen-control-row">
             <div class="fullscreen-control-left">
-              <button id="fullscreen-fav-btn" class="btn btn-secondary btn-icon ripple-target" title="收藏">❤</button>
+              <button id="fullscreen-fav-btn" class="btn btn-secondary btn-icon ripple-target" title="收藏"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiai"></use></svg></button>
             </div>
             <div class="fullscreen-control-main">
-              <button id="fullscreen-prev-btn" class="btn btn-secondary btn-icon fullscreen-btn-lg ripple-target" title="上一首">⏮</button>
-              <button id="fullscreen-play-btn" class="btn play-btn fullscreen-play-btn ripple-target" title="播放/暂停">▶</button>
-              <button id="fullscreen-next-btn" class="btn btn-secondary btn-icon fullscreen-btn-lg ripple-target" title="下一首">⏭</button>
+              <button id="fullscreen-prev-btn" class="btn btn-secondary btn-icon fullscreen-btn-lg ripple-target" title="上一首"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-shangyishou"></use></svg></button>
+              <button id="fullscreen-play-btn" class="btn play-btn fullscreen-play-btn ripple-target" title="播放/暂停"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-icon_play"></use></svg></button>
+              <button id="fullscreen-next-btn" class="btn btn-secondary btn-icon fullscreen-btn-lg ripple-target" title="下一首"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiayishou"></use></svg></button>
             </div>
             <div class="fullscreen-control-right">
-              <span>🔊</span>
+              <span><svg class="icon" aria-hidden="true"><use xlink:href="#icon-yinliang"></use></svg></span>
               <input id="fullscreen-volume" class="volume-slider fullscreen-volume" type="range" min="0" max="1" step="0.01" value="0.8" />
             </div>
           </div>
@@ -2457,7 +2540,7 @@
       ;(function () {
         const translations = {
           zh: {
-            appTitle: '木木的音乐站 <img src="svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
+            appTitle: '木木的音乐站 <img src="/image/svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
             authorLabel: '作者：Mumu',
             shortcutHint:
               '快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 · L 切换歌词效果',
@@ -2529,7 +2612,7 @@
             modalCancel: '取消'
           },
           en: {
-            appTitle: 'Mumu Music Station <img src="svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
+            appTitle: 'Mumu Music Station <img src="/image/svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
             authorLabel: 'Author: Mumu',
             shortcutHint:
               'Shortcuts: Space Play/Pause · ←/→ Seek · ↑/↓ Volume · N/P Track · F Fav · L Lyrics FX',
@@ -3126,7 +3209,7 @@
                 if (!state.isPlaying) {
                   dom.audio.play()
                   state.isPlaying = true
-                  dom.playBtn.textContent = '⏸'
+                  dom.playBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
                   dom.playerStatus.textContent = t('playerStatusPlaying')
                 }
               }
@@ -3256,8 +3339,8 @@
             dom.audio.src = track.audioUrl
             await dom.audio.play()
             state.isPlaying = true
-            dom.playBtn.textContent = '⏸'
-            dom.fullscreenPlayBtn.textContent = '⏸'
+            dom.playBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
+            dom.fullscreenPlayBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
             dom.playerStatus.textContent = t('playerStatusPlaying')
           } catch (e) {
             console.error(e)
@@ -3599,10 +3682,10 @@
             act.className = 'track-actions'
             const pBtn = document.createElement('button')
             pBtn.className = 'btn btn-secondary btn-icon ripple-target'
-            pBtn.textContent = '▶'
+            pBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-icon_play"></use></svg>'
             const fBtn = document.createElement('button')
             fBtn.className = 'btn btn-secondary btn-icon ripple-target'
-            fBtn.textContent = '❤'
+            fBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiai"></use></svg>'
             if (isFavorite(track)) fBtn.classList.add('btn-fav-active')
 
             pBtn.addEventListener('click', ev => {
@@ -3644,11 +3727,6 @@
             item.addEventListener('click', () => pBtn.click())
             wrap.appendChild(item)
           })
-
-          const playingEl = wrap.querySelector('.track-item.playing')
-          if (playingEl) {
-            playingEl.scrollIntoView({ block: 'center', behavior: 'smooth' })
-          }
         }
 
         function openPlaylistModal() {
@@ -4128,15 +4206,15 @@
           })
           dom.audio.addEventListener('play', () => {
             state.isPlaying = true
-            dom.playBtn.textContent = '⏸'
-            dom.fullscreenPlayBtn.textContent = '⏸'
+            dom.playBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
+            dom.fullscreenPlayBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
             dom.playerStatus.textContent = t('playerStatusPlaying')
             dom.audioWave.classList.add('playing')
           })
           dom.audio.addEventListener('pause', () => {
             state.isPlaying = false
-            dom.playBtn.textContent = '▶'
-            dom.fullscreenPlayBtn.textContent = '▶'
+            dom.playBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-icon_play"></use></svg>'
+            dom.fullscreenPlayBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-icon_play"></use></svg>'
             dom.playerStatus.textContent = t('playerStatusPaused')
             audioLevel = 0
             dom.audioWave.classList.remove('playing')
@@ -4373,7 +4451,7 @@
           dom.fullscreenQualityPill.style.display = track.quality === 'lossless' ? 'inline-block' : 'none'
 
           // 播放状态
-          dom.fullscreenPlayBtn.textContent = state.isPlaying ? '⏸' : '▶'
+          dom.fullscreenPlayBtn.innerHTML = state.isPlaying ? '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>' : '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-icon_play"></use></svg>'
 
           // 收藏按钮状态
           dom.fullscreenFavBtn.classList.toggle('btn-fav-active', isFavorite(track))
