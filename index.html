@@ -1199,10 +1199,36 @@
         pointer-events: none;
         transition: opacity 0.2s ease, transform 0.2s ease;
         z-index: 9999;
+        min-width: 200px;
+        text-align: center;
       }
       #toast.show {
         opacity: 1;
         transform: translateX(-50%) translateY(-4px);
+      }
+      
+      /* 下载进度条 */
+      .download-progress-wrap {
+        margin-top: 8px;
+      }
+      .download-progress-bar {
+        width: 100%;
+        height: 6px;
+        background: var(--bg-dark);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .download-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent) 0%, var(--accent-strong) 100%);
+        border-radius: 3px;
+        transition: width 0.15s ease;
+        width: 0%;
+      }
+      .download-progress-text {
+        font-size: 11px;
+        color: var(--text-sub);
+        margin-top: 4px;
       }
 
       /* 柔和水波纹：双圈 */
@@ -2118,7 +2144,7 @@
 
             <div class="search-stats">
               <span id="search-status" data-i18n="searchStatusIdle"
-                >尚未搜索，试试输入“林俊杰”？</span
+                >尚未搜索，试试输入"林俊杰"？</span
               >
               <span id="search-count">0</span>
             </div>
@@ -2599,7 +2625,7 @@
             perSourceCount: '每个源加载',
             perSourceCountTail: '首结果',
             loadMore: '加载更多',
-            searchStatusIdle: '尚未搜索，试试输入“林俊杰”？',
+            searchStatusIdle: '尚未搜索，试试输入"林俊杰"？',
             searchStatusSearching: '正在搜索中…',
             searchStatusDone: '搜索完成。',
             searchStatusNoSource: '请至少选择一个音乐源。',
@@ -2729,7 +2755,7 @@
           enabledSources: { migu: true, netease: true, qq: true, kuwo: true },
           perSourceLimit: 10,
           perSourceCurrentLimit: { migu: 10, netease: 10, qq: 10, kuwo: 10 },
-          // ✅ 仅为“正确加载更多（分页）”新增：网易云使用 page；其他源保持原逻辑（加大 num 再去重）
+          // ✅ 仅为"正确加载更多（分页）"新增：网易云使用 page；其他源保持原逻辑（加大 num 再去重）
           perSourcePage: { migu: 1, netease: 1, qq: 1, kuwo: 1 },
 
           searchKeyword: '',
@@ -2741,6 +2767,7 @@
           playContext: { type: 'results', index: -1, playlistId: null },
           playMode: 'list',
           isPlaying: false,
+          isDownloading: false,
           lyricLines: [],
           currentLyricIndex: -1,
           searchInProgress: false,
@@ -2766,9 +2793,59 @@
         function showToast(msg) {
           const toast = $('toast')
           if (!toast) return
-          toast.textContent = msg
+          toast.innerHTML = msg
           toast.classList.add('show')
           setTimeout(() => toast.classList.remove('show'), 2000)
+        }
+        
+        // 持久显示的下载状态 toast（需要手动关闭）
+        let downloadToastTimer = null
+        function showDownloadToast(msg, persistent = false) {
+          const toast = $('toast')
+          if (!toast) return
+          if (downloadToastTimer) {
+            clearTimeout(downloadToastTimer)
+            downloadToastTimer = null
+          }
+          toast.innerHTML = msg
+          toast.classList.add('show')
+          if (!persistent) {
+            downloadToastTimer = setTimeout(() => {
+              toast.classList.remove('show')
+              downloadToastTimer = null
+            }, 2500)
+          }
+        }
+        
+        // 带进度条的下载 toast
+        function showDownloadProgress(title, percent, extra = '') {
+          const toast = $('toast')
+          if (!toast) return
+          if (downloadToastTimer) {
+            clearTimeout(downloadToastTimer)
+            downloadToastTimer = null
+          }
+          const percentText = percent >= 0 ? `${percent}%` : ''
+          const extraText = extra ? `<div class="download-progress-text">${extra}</div>` : ''
+          toast.innerHTML = `
+            <div>${title}</div>
+            <div class="download-progress-wrap">
+              <div class="download-progress-bar">
+                <div class="download-progress-fill" style="width: ${Math.max(0, percent)}%"></div>
+              </div>
+              ${percentText || extraText ? `<div class="download-progress-text">${percentText} ${extra}</div>` : ''}
+            </div>
+          `
+          toast.classList.add('show')
+        }
+        function hideDownloadToast() {
+          const toast = $('toast')
+          if (!toast) return
+          if (downloadToastTimer) {
+            clearTimeout(downloadToastTimer)
+            downloadToastTimer = null
+          }
+          toast.classList.remove('show')
         }
         function formatTime(sec) {
           if (!isFinite(sec) || sec < 0) sec = 0
@@ -2875,7 +2952,7 @@
           return added
         }
 
-        // ✅ 新增：把网易云的 quality 字段映射到 UI 的 “lossless” 标签（仅用于显示）
+        // ✅ 新增：把网易云的 quality 字段映射到 UI 的 "lossless" 标签（仅用于显示）
         function neteaseQualityToTag(q) {
           const s = (q || '').toString().toLowerCase()
           if (
@@ -3059,9 +3136,6 @@
           dom.searchCount.textContent = state.searchResults.length.toString()
           renderMiniSearchList()
           renderPlaylistList()
-          if (!state.currentTrack && state.searchResults.length) {
-            playFromList('results', 0)
-          }
           if (!reset) {
             if (added === 0) {
               state.noMoreResults = true
@@ -3556,6 +3630,20 @@
             return
           }
           
+          // 防止重复点击
+          if (state.isDownloading) {
+            const busyMsg = state.language === 'zh' ? '正在下载中，请稍候...' : 'Download in progress, please wait...'
+            showToast(busyMsg)
+            return
+          }
+          state.isDownloading = true
+          
+          // 禁用下载按钮
+          if (dom.downloadBtn) {
+            dom.downloadBtn.disabled = true
+            dom.downloadBtn.style.opacity = '0.5'
+          }
+          
           const fileName = `${tr.title || 'Unknown'} - ${tr.artist || 'Unknown'}.mp3`.replace(/[\\/:*?"<>|]/g, '_')
           
           // 由于跨域限制，使用 CORS 代理来下载
@@ -3566,17 +3654,26 @@
             'https://api.allorigins.win/raw?url='
           ]
           
-          const downloadingMsg = state.language === 'zh' ? '下载中，请稍候...' : 'Downloading, please wait...'
-          showToast(downloadingMsg)
+          const downloadTitle = state.language === 'zh' ? '⏳ 正在下载...' : '⏳ Downloading...'
+          showDownloadProgress(downloadTitle, 0)
+          
+          function resetDownloadState() {
+            state.isDownloading = false
+            if (dom.downloadBtn) {
+              dom.downloadBtn.disabled = false
+              dom.downloadBtn.style.opacity = '1'
+            }
+          }
           
           // 尝试使用代理下载
           async function tryDownloadWithProxy(proxyIndex = 0) {
             if (proxyIndex >= corsProxies.length) {
               // 所有代理都失败了，回退到直接打开链接
+              resetDownloadState()
               const fallbackMsg = state.language === 'zh' 
                 ? '无法直接下载，已在新窗口打开，请手动保存' 
                 : 'Cannot download directly, opened in new tab, please save manually'
-              showToast(fallbackMsg)
+              showDownloadToast(fallbackMsg)
               window.open(tr.audioUrl, '_blank')
               return
             }
@@ -3587,7 +3684,38 @@
               const response = await fetch(proxyUrl)
               if (!response.ok) throw new Error('Proxy request failed')
               
-              const blob = await response.blob()
+              // 获取文件大小用于计算进度
+              const contentLength = response.headers.get('content-length')
+              const total = contentLength ? parseInt(contentLength, 10) : 0
+              
+              let loaded = 0
+              const reader = response.body.getReader()
+              const chunks = []
+              
+              while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+                
+                chunks.push(value)
+                loaded += value.length
+                
+                // 更新进度条
+                if (total > 0) {
+                  const percent = Math.round((loaded / total) * 100)
+                  const sizeMB = (loaded / 1024 / 1024).toFixed(1)
+                  const totalMB = (total / 1024 / 1024).toFixed(1)
+                  showDownloadProgress(downloadTitle, percent, `${sizeMB} / ${totalMB} MB`)
+                } else {
+                  // 无法获取总大小时显示已下载大小，进度条动画
+                  const sizeMB = (loaded / 1024 / 1024).toFixed(1)
+                  // 模拟进度（假设最大10MB）
+                  const fakePercent = Math.min(95, Math.round((loaded / (10 * 1024 * 1024)) * 100))
+                  showDownloadProgress(downloadTitle, fakePercent, `已下载 ${sizeMB} MB`)
+                }
+              }
+              
+              // 合并所有 chunks
+              const blob = new Blob(chunks, { type: 'audio/mpeg' })
               const blobUrl = URL.createObjectURL(blob)
               
               const a = document.createElement('a')
@@ -3602,10 +3730,15 @@
                 URL.revokeObjectURL(blobUrl)
               }, 100)
               
-              const successMsg = state.language === 'zh' ? '下载完成' : 'Download complete'
-              showToast(successMsg)
+              resetDownloadState()
+              const successMsg = state.language === 'zh' ? '✅ 下载完成' : '✅ Download complete'
+              showDownloadToast(successMsg)
             } catch (error) {
               console.log(`Proxy ${proxyIndex + 1} failed, trying next...`)
+              const retryTitle = state.language === 'zh' 
+                ? `⏳ 切换下载线路...` 
+                : `⏳ Switching source...`
+              showDownloadProgress(retryTitle, 0, `${proxyIndex + 2}/${corsProxies.length}`)
               tryDownloadWithProxy(proxyIndex + 1)
             }
           }
@@ -4265,7 +4398,7 @@
             }
           })
 
-          // 监听 playlist-main 的滚动，实现“滚动到底加载更多”
+          // 监听 playlist-main 的滚动，实现"滚动到底加载更多"
           dom.playlistMain.addEventListener('scroll', () => {
             const activeTab =
               document.querySelector('.playlist-tab.active')?.dataset.tab ||
