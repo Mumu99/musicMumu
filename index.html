@@ -3301,6 +3301,73 @@
           }
         }
 
+        // 更新 Media Session (用于锁屏/灵动岛显示)
+        function updateMediaSession(track) {
+          if (!('mediaSession' in navigator) || !track) return
+          
+          const artwork = []
+          if (track.cover) {
+            artwork.push(
+              { src: track.cover, sizes: '96x96', type: 'image/jpeg' },
+              { src: track.cover, sizes: '128x128', type: 'image/jpeg' },
+              { src: track.cover, sizes: '192x192', type: 'image/jpeg' },
+              { src: track.cover, sizes: '256x256', type: 'image/jpeg' },
+              { src: track.cover, sizes: '384x384', type: 'image/jpeg' },
+              { src: track.cover, sizes: '512x512', type: 'image/jpeg' }
+            )
+          }
+          
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: track.title || '未知歌曲',
+            artist: track.artist || '未知艺术家',
+            album: track.album || '',
+            artwork: artwork
+          })
+          
+          // 设置 Media Session action handlers
+          navigator.mediaSession.setActionHandler('play', () => {
+            dom.audio.play().catch(() => {})
+          })
+          navigator.mediaSession.setActionHandler('pause', () => {
+            dom.audio.pause()
+          })
+          navigator.mediaSession.setActionHandler('previoustrack', () => {
+            playNext('prev')
+          })
+          navigator.mediaSession.setActionHandler('nexttrack', () => {
+            playNext('next')
+          })
+          navigator.mediaSession.setActionHandler('seekto', (details) => {
+            if (details.seekTime !== undefined) {
+              dom.audio.currentTime = details.seekTime
+            }
+          })
+          navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+            const skipTime = details.seekOffset || 10
+            dom.audio.currentTime = Math.max(dom.audio.currentTime - skipTime, 0)
+          })
+          navigator.mediaSession.setActionHandler('seekforward', (details) => {
+            const skipTime = details.seekOffset || 10
+            dom.audio.currentTime = Math.min(dom.audio.currentTime + skipTime, dom.audio.duration || 0)
+          })
+        }
+        
+        // 更新 Media Session 播放位置状态
+        function updateMediaSessionPositionState() {
+          if (!('mediaSession' in navigator) || !navigator.mediaSession.setPositionState) return
+          if (!dom.audio.duration || isNaN(dom.audio.duration)) return
+          
+          try {
+            navigator.mediaSession.setPositionState({
+              duration: dom.audio.duration,
+              playbackRate: dom.audio.playbackRate,
+              position: dom.audio.currentTime
+            })
+          } catch (e) {
+            // ignore errors
+          }
+        }
+
         async function playTrack(track, context) {
           if (!track) return
           state.currentTrack = track
@@ -3378,6 +3445,8 @@
             dom.playBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
             dom.fullscreenPlayBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use xlink:href="#icon-zanting"></use></svg>'
             dom.playerStatus.textContent = t('playerStatusPlaying')
+            // 更新 Media Session (锁屏/灵动岛显示)
+            updateMediaSession(track)
           } catch (e) {
             console.error(e)
             showToast(t('toastPlayError'))
@@ -4239,6 +4308,10 @@
             // 更新全屏播放器
             updateFullscreenProgress()
             updateFullscreenLyricsHighlight()
+            // 更新 Media Session 播放位置 (每秒更新一次即可)
+            if (Math.floor(cur) !== Math.floor(cur - 0.25)) {
+              updateMediaSessionPositionState()
+            }
           })
           dom.audio.addEventListener('play', () => {
             state.isPlaying = true
