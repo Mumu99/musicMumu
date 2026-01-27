@@ -1,5 +1,6 @@
 // Service Worker for 木木的音乐站
-const CACHE_NAME = 'mumu-music-v3';
+// 每次发版时更新此版本号
+const CACHE_NAME = 'mumu-music-v4';
 const urlsToCache = [
   './',
   './index.html',
@@ -15,7 +16,7 @@ self.addEventListener('install', (event) => {
         console.log('缓存已打开');
         return cache.addAll(urlsToCache);
       })
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()) // 强制新 SW 立即激活
   );
 });
 
@@ -31,11 +32,11 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => self.clients.claim()) // 立即控制所有页面
   );
 });
 
-// 拦截请求
+// 拦截请求 - 使用"网络优先，缓存回退"策略
 self.addEventListener('fetch', (event) => {
   // 跳过非 GET 请求
   if (event.request.method !== 'GET') return;
@@ -46,34 +47,40 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request)
+    // 网络优先策略：先尝试网络，失败则用缓存
+    fetch(event.request)
       .then((response) => {
-        // 如果有缓存，返回缓存
-        if (response) {
+        // 检查是否是有效响应
+        if (!response || response.status !== 200 || response.type !== 'basic') {
           return response;
         }
-        
-        // 否则发起网络请求
-        return fetch(event.request).then((response) => {
-          // 检查是否是有效响应
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
 
-          // 克隆响应（因为响应是流，只能使用一次）
-          const responseToCache = response.clone();
+        // 克隆响应并更新缓存
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
 
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-
-          return response;
-        });
+        return response;
       })
       .catch(() => {
-        // 离线时返回离线页面（可选）
-        return caches.match('./index.html');
+        // 网络失败时使用缓存
+        return caches.match(event.request)
+          .then((response) => {
+            if (response) {
+              return response;
+            }
+            // 如果缓存也没有，返回离线页面
+            return caches.match('./index.html');
+          });
       })
   );
+});
+
+// 监听消息，支持手动触发更新
+self.addEventListener('message', (event) => {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
