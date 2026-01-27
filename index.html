@@ -2217,13 +2217,6 @@
                     >
                       <svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiazai"></use></svg>
                     </button>
-                    <button
-                      id="share-btn"
-                      class="btn btn-secondary btn-icon ripple-target"
-                      title="分享"
-                    >
-                      <svg class="icon" aria-hidden="true"><use xlink:href="#icon-fenxiang"></use></svg>
-                    </button>
                   </div>
                   <div
                     id="player-status"
@@ -2358,13 +2351,6 @@
                     title="把当前歌曲加入歌单"
                   >
                     ＋
-                  </button>
-                  <button
-                    id="share-playlist-btn"
-                    class="btn btn-secondary btn-icon ripple-target"
-                    title="分享歌单"
-                  >
-                    <svg class="icon" aria-hidden="true"><use xlink:href="#icon-fenxiang"></use></svg>
                   </button>
                   <button
                     id="new-playlist-btn"
@@ -3770,121 +3756,6 @@
           tryDownloadWithProxy()
         }
 
-        // 分享当前歌曲（分享音频链接）
-        async function handleShareCurrent() {
-          const tr = state.currentTrack
-          if (!tr) {
-            showToast(t('toastNoCurrentTrack'))
-            return
-          }
-          
-          if (!tr.audioUrl) {
-            showToast(t('toastDownloadNotReady'))
-            return
-          }
-          
-          const songInfo = `${tr.title} - ${tr.artist}`
-          const shareText = `🎵 ${songInfo}\n${tr.audioUrl}`
-          
-          // 构建分享数据 - 直接分享音频链接
-          const shareData = {
-            title: songInfo,
-            text: state.language === 'zh' 
-              ? `🎵 ${songInfo}` 
-              : `🎵 ${songInfo}`,
-            url: tr.audioUrl
-          }
-          
-          // 尝试使用 Web Share API
-          if (navigator.share) {
-            try {
-              await navigator.share(shareData)
-              return
-            } catch (e) {
-              if (e.name === 'AbortError') return // 用户取消
-              console.log('Share API failed, falling back to clipboard')
-            }
-          }
-          
-          // 回退到复制到剪贴板
-          try {
-            await navigator.clipboard.writeText(shareText)
-            showToast(t('toastShareCopied'))
-          } catch (e) {
-            const textarea = document.createElement('textarea')
-            textarea.value = shareText
-            textarea.style.position = 'fixed'
-            textarea.style.opacity = '0'
-            document.body.appendChild(textarea)
-            textarea.select()
-            try {
-              document.execCommand('copy')
-              showToast(t('toastShareCopied'))
-            } catch (e2) {
-              showToast(t('toastShareFailed'))
-            }
-            document.body.removeChild(textarea)
-          }
-        }
-        
-        // 分享歌单
-        async function handleSharePlaylist(playlistId) {
-          const pl = state.playlists.find(p => p.id === playlistId)
-          if (!pl || !pl.tracks.length) {
-            showToast(t('toastPlaylistEmpty'))
-            return
-          }
-          
-          // 构建歌单信息
-          const trackList = pl.tracks.slice(0, 5).map(t => `  • ${t.title} - ${t.artist}`).join('\n')
-          const moreText = pl.tracks.length > 5 
-            ? (state.language === 'zh' ? `\n  ...还有 ${pl.tracks.length - 5} 首` : `\n  ...and ${pl.tracks.length - 5} more`)
-            : ''
-          
-          const shareData = {
-            title: pl.name,
-            text: state.language === 'zh' 
-              ? `🎶 我的歌单「${pl.name}」(${pl.tracks.length}首)\n${trackList}${moreText}` 
-              : `🎶 My playlist "${pl.name}" (${pl.tracks.length} songs)\n${trackList}${moreText}`,
-            url: window.location.href
-          }
-          
-          // 尝试使用 Web Share API
-          if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-            try {
-              await navigator.share(shareData)
-              return
-            } catch (e) {
-              if (e.name !== 'AbortError') {
-                console.log('Share failed, falling back to clipboard')
-              } else {
-                return
-              }
-            }
-          }
-          
-          // 回退到复制到剪贴板
-          const shareText = `${shareData.text}\n${shareData.url}`
-          try {
-            await navigator.clipboard.writeText(shareText)
-            showToast(t('toastPlaylistShareCopied'))
-          } catch (e) {
-            const textarea = document.createElement('textarea')
-            textarea.value = shareText
-            textarea.style.position = 'fixed'
-            textarea.style.opacity = '0'
-            document.body.appendChild(textarea)
-            textarea.select()
-            try {
-              document.execCommand('copy')
-              showToast(t('toastPlaylistShareCopied'))
-            } catch (e2) {
-              showToast(t('toastShareFailed'))
-            }
-            document.body.removeChild(textarea)
-          }
-        }
-
         function addCurrentToPlaylist() {
           const plId = dom.playlistSelect.value
           if (!plId) {
@@ -4409,7 +4280,6 @@
           dom.nextBtn = $('next-btn')
           dom.favBtn = $('fav-btn')
           dom.downloadBtn = $('download-btn')
-          dom.shareBtn = $('share-btn')
           dom.audio = $('audio')
           dom.currentTime = $('current-time')
           dom.totalTime = $('total-time')
@@ -4427,7 +4297,6 @@
           dom.playlistSelect = $('playlist-select')
           dom.newPlaylistBtn = $('new-playlist-btn')
           dom.addCurrentBtn = $('add-current-btn')
-          dom.sharePlaylistBtn = $('share-playlist-btn')
 
           dom.playlistModal = $('playlist-modal')
           dom.playlistNameInput = $('playlist-name-input')
@@ -4559,7 +4428,6 @@
           dom.nextBtn.addEventListener('click', () => playNext('next'))
           dom.favBtn.addEventListener('click', toggleFavoriteCurrent)
           dom.downloadBtn.addEventListener('click', handleDownloadCurrent)
-          dom.shareBtn.addEventListener('click', handleShareCurrent)
 
           dom.volumeSlider.addEventListener('input', () => {
             dom.audio.volume = parseFloat(dom.volumeSlider.value)
@@ -4648,11 +4516,6 @@
             renderPlaylistList()
           })
           dom.addCurrentBtn.addEventListener('click', addCurrentToPlaylist)
-          dom.sharePlaylistBtn.addEventListener('click', () => {
-            const plId = dom.playlistSelect.value
-            if (plId) handleSharePlaylist(plId)
-            else showToast(t('toastNeedPlaylistSelected'))
-          })
 
           // 添加到歌单弹窗相关事件
           dom.addToPlaylistBtn.addEventListener('click', openAddToPlaylistModal)
