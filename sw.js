@@ -1,5 +1,5 @@
 // Service Worker for 木木的音乐站
-const CACHE_NAME = 'mumu-music-v2';
+const CACHE_NAME = 'mumu-music-v3';
 const urlsToCache = [
   './',
   './index.html',
