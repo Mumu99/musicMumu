@@ -3770,7 +3770,7 @@
           tryDownloadWithProxy()
         }
 
-        // 分享当前歌曲（分享音频文件）
+        // 分享当前歌曲（分享音频链接）
         async function handleShareCurrent() {
           const tr = state.currentTrack
           if (!tr) {
@@ -3784,104 +3784,25 @@
           }
           
           const songInfo = `${tr.title} - ${tr.artist}`
-          const fileName = `${tr.title || 'Unknown'} - ${tr.artist || 'Unknown'}.mp3`.replace(/[\\/:*?"<>|]/g, '_')
-          
-          // 检查浏览器是否支持文件分享
-          const supportsFileShare = navigator.canShare && navigator.canShare({ files: [new File([''], 'test.mp3', { type: 'audio/mpeg' })] })
-          
-          if (supportsFileShare) {
-            // 支持文件分享，先下载再分享
-            const loadingMsg = state.language === 'zh' ? '正在准备分享...' : 'Preparing to share...'
-            showDownloadProgress(loadingMsg, 0)
-            
-            const corsProxies = [
-              'https://api.codetabs.com/v1/proxy?quest=',
-              'https://corsproxy.io/?',
-              'https://api.allorigins.win/raw?url='
-            ]
-            
-            let success = false
-            for (const proxy of corsProxies) {
-              try {
-                const response = await fetch(proxy + encodeURIComponent(tr.audioUrl))
-                if (!response.ok) continue
-                
-                const contentLength = response.headers.get('content-length')
-                const total = contentLength ? parseInt(contentLength, 10) : 0
-                let loaded = 0
-                
-                const reader = response.body.getReader()
-                const chunks = []
-                
-                while (true) {
-                  const { done, value } = await reader.read()
-                  if (done) break
-                  chunks.push(value)
-                  loaded += value.length
-                  if (total > 0) {
-                    const percent = Math.round((loaded / total) * 100)
-                    const loadedMB = (loaded / 1024 / 1024).toFixed(1)
-                    const totalMB = (total / 1024 / 1024).toFixed(1)
-                    showDownloadProgress(loadingMsg, percent, `${loadedMB}/${totalMB} MB`)
-                  }
-                }
-                
-                const blob = new Blob(chunks, { type: 'audio/mpeg' })
-                const file = new File([blob], fileName, { type: 'audio/mpeg' })
-                
-                hideToast()
-                
-                // 分享文件
-                const shareData = {
-                  files: [file],
-                  title: songInfo,
-                  text: state.language === 'zh' 
-                    ? `🎵 ${songInfo}` 
-                    : `🎵 ${songInfo}`
-                }
-                
-                await navigator.share(shareData)
-                success = true
-                break
-              } catch (e) {
-                if (e.name === 'AbortError') {
-                  hideToast()
-                  return // 用户取消分享
-                }
-                console.log('Proxy failed:', proxy, e)
-              }
-            }
-            
-            hideToast()
-            
-            if (!success) {
-              // 文件分享失败，回退到链接分享
-              fallbackShareLink(tr, songInfo)
-            }
-          } else {
-            // 不支持文件分享，直接分享链接
-            fallbackShareLink(tr, songInfo)
-          }
-        }
-        
-        // 回退到链接分享
-        async function fallbackShareLink(tr, songInfo) {
           const shareText = `🎵 ${songInfo}\n${tr.audioUrl}`
           
+          // 构建分享数据 - 直接分享音频链接
           const shareData = {
             title: songInfo,
             text: state.language === 'zh' 
-              ? `🎵 我在木木音乐站发现了一首好听的歌：${songInfo}` 
-              : `🎵 I found a great song on Mumu Music: ${songInfo}`,
+              ? `🎵 ${songInfo}` 
+              : `🎵 ${songInfo}`,
             url: tr.audioUrl
           }
           
-          if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+          // 尝试使用 Web Share API
+          if (navigator.share) {
             try {
               await navigator.share(shareData)
               return
             } catch (e) {
-              if (e.name === 'AbortError') return
+              if (e.name === 'AbortError') return // 用户取消
+              console.log('Share API failed, falling back to clipboard')
             }
           }
           
