@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <title>木木的音乐站 - Mumu Music</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <!-- 圆润可爱字体 -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -990,6 +990,10 @@
       .playlist-tab:hover {
         color: var(--text-main);
       }
+      .playlist-tab.active:hover {
+        background: var(--accent);
+        color: #fff;
+      }
       .playlist-tab.active {
         background: var(--accent);
         color: #fff;
@@ -1018,7 +1022,6 @@
         gap: 8px;
         flex-shrink: 0;
         padding: 8px 4px;
-        margin-bottom: 8px;
         border-radius: 0;
         position: sticky;
         top: 0;
@@ -1131,6 +1134,9 @@
         color: var(--text-sub);
         margin-top: 3px;
       }
+      .track-meta-sub .source-dot {
+        margin-right: 4px;
+      }
       .track-actions {
         display: flex;
         gap: 6px;
@@ -1151,6 +1157,10 @@
         background: var(--accent-red);
         color: #fff;
         box-shadow: none;
+      }
+      .btn-fav-active:hover {
+        background: var(--accent-red);
+        color: #fff;
       }
 
       footer {
@@ -1178,7 +1188,7 @@
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.2s ease, transform 0.2s ease;
-        z-index: 1500;
+        z-index: 9999;
       }
       #toast.show {
         opacity: 1;
@@ -1749,6 +1759,16 @@
         color: var(--text-sub);
         margin-top: 100px;
       }
+      .fullscreen-lyrics.no-lyrics {
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+      }
+      .fullscreen-lyrics.no-lyrics .lyrics-empty {
+        margin-top: 0;
+      }
       .fullscreen-controls {
         flex-shrink: 0;
         padding-top: 30px;
@@ -2002,7 +2022,7 @@
             <button class="lang-btn" data-lang="en">EN</button>
           </div>
           <div class="shortcut-hint" data-i18n="shortcutHint">
-            快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 ·
+            快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 喜欢 ·
             L 切换歌词效果
           </div>
           <button
@@ -2105,9 +2125,6 @@
               <span data-i18n="playerTitle">正在播放</span>
             </div>
             <div class="panel-header-right">
-              <span class="chip" data-i18n="playerSubtitle"
-                >歌词动态高亮 · 炫酷霓虹</span
-              >
               <button id="fullscreen-player-btn" class="btn btn-secondary btn-icon ripple-target" title="全屏播放">
                 ⛶
               </button>
@@ -2146,7 +2163,7 @@
                     <button
                       id="fav-btn"
                       class="btn btn-secondary btn-icon ripple-target"
-                      title="收藏 (F)"
+                      title="喜欢 (F)"
                     >
                       <svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiai"></use></svg>
                     </button>
@@ -2270,7 +2287,7 @@
                 data-tab="favorites"
                 data-i18n="tabFavorites"
               >
-                我的收藏
+                我喜欢
               </div>
               <div
                 class="playlist-tab"
@@ -2454,7 +2471,7 @@
           </div>
           <div class="shortcut-card">
             <div class="shortcut-label" data-i18n="shortcutFav">
-              收藏 / 取消收藏
+              喜欢 / 取消喜欢
             </div>
             <div class="shortcut-key"><kbd>F</kbd></div>
           </div>
@@ -2529,7 +2546,7 @@
           </div>
           <div class="fullscreen-control-row">
             <div class="fullscreen-control-left">
-              <button id="fullscreen-fav-btn" class="btn btn-secondary btn-icon ripple-target" title="收藏"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiai"></use></svg></button>
+              <button id="fullscreen-fav-btn" class="btn btn-secondary btn-icon ripple-target" title="喜欢"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-xiai"></use></svg></button>
             </div>
             <div class="fullscreen-control-main">
               <button id="fullscreen-prev-btn" class="btn btn-secondary btn-icon fullscreen-btn-lg ripple-target" title="上一首"><svg class="icon" aria-hidden="true"><use xlink:href="#icon-shangyishou"></use></svg></button>
@@ -2554,14 +2571,14 @@
             appTitle: '木木的音乐站 <img src="image/svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
             authorLabel: '作者：Mumu',
             shortcutHint:
-              '快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 收藏 · L 切换歌词效果',
+              '快捷键：Space 播放/暂停 · ←/→ 跳转 · ↑/↓ 音量 · N/P 切歌 · F 喜欢 · L 切换歌词效果',
             shortcutPanelTitle: '快捷键说明',
             shortcutPanelDesc: '使用键盘可以更加方便地控制木木的音乐站：',
             shortcutPlayPause: '播放 / 暂停',
             shortcutSeek: '快退 / 快进 5 秒',
             shortcutVolume: '音量加 / 减',
             shortcutPrevNext: '上一首 / 下一首',
-            shortcutFav: '收藏 / 取消收藏当前歌曲',
+            shortcutFav: '喜欢 / 取消喜欢当前歌曲',
             shortcutLyricsFX: '切换歌词炫酷效果',
             shortcutMute: '静音 / 取消静音',
             shortcutFocusSearch: '聚焦搜索框',
@@ -2577,7 +2594,6 @@
             searchStatusDone: '搜索完成。',
             searchStatusNoSource: '请至少选择一个音乐源。',
             playerTitle: '正在播放',
-            playerSubtitle: '歌词动态高亮 · 炫酷霓虹',
             coverHint: '搜索并播放一首歌吧！',
             playerStatusIdle: '空闲',
             playerStatusLoading: '加载音源中…',
@@ -2586,15 +2602,15 @@
             lyricsEmpty: '暂无歌词，试着播放一首支持歌词的歌曲。',
             playlistTitle: '播放列表',
             tabResults: '搜索结果',
-            tabFavorites: '我的收藏',
+            tabFavorites: '我喜欢',
             tabCustomLists: '自建歌单',
             playlistInfoResults: '搜索结果列表',
-            playlistInfoFavorites: '收藏列表',
+            playlistInfoFavorites: '喜欢列表',
             playlistInfoPlaylist: '歌单',
             newPlaylist: '新建歌单',
             footerText: '本站仅作为学习演示，音乐版权归各平台与原作者所有。',
-            toastAddedFavorite: '已添加到收藏',
-            toastRemovedFavorite: '已从收藏移除',
+            toastAddedFavorite: '已添加到喜欢',
+            toastRemovedFavorite: '已从喜欢移除',
             toastAddedToPlaylist: '已添加到歌单',
             toastAlreadyInList: '该歌曲已在当前列表里~',
             toastNoMore: '已经没有更多搜索结果啦~',
@@ -2650,7 +2666,6 @@
             searchStatusDone: 'Search completed.',
             searchStatusNoSource: 'Please select at least one music source.',
             playerTitle: 'Now Playing',
-            playerSubtitle: 'Dynamic neon lyrics visualizer',
             coverHint: 'Search and play a song!',
             playerStatusIdle: 'Idle',
             playerStatusLoading: 'Loading audio…',
@@ -4260,13 +4275,6 @@
                   state.playContext.playlistId = state.playlists[0].id
               }
               renderPlaylistList()
-              const list = getActiveList()
-              if (!state.currentTrack && list.length)
-                playFromList(
-                  state.playContext.type,
-                  0,
-                  state.playContext.playlistId
-                )
             })
           })
 
@@ -4476,6 +4484,7 @@
           wrap.innerHTML = ''
 
           if (!state.lyricLines.length) {
+            wrap.classList.add('no-lyrics')
             const empty = document.createElement('div')
             empty.className = 'lyrics-empty'
             empty.textContent = t('lyricsEmpty')
@@ -4483,6 +4492,7 @@
             return
           }
 
+          wrap.classList.remove('no-lyrics')
           state.lyricLines.forEach((line, idx) => {
             const div = document.createElement('div')
             div.className = 'lyrics-line'
