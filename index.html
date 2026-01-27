@@ -84,8 +84,17 @@
         inset: 0;
         width: 100%;
         height: 100%;
-        z-index: 0;
+        z-index: 10001;
         pointer-events: none;
+      }
+      
+      /* 背景渐变层 */
+      .bg-gradient {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
         background: linear-gradient(135deg, #0c0d0f 0%, #141517 50%, #0c0d0f 100%);
       }
 
@@ -634,23 +643,71 @@
         height: 60px;
         border-radius: 50%;
         border: 8px solid var(--bg-tertiary);
-        background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-tertiary) 100%);
+        background: 
+          repeating-conic-gradient(
+            from 0deg,
+            transparent 0deg 30deg,
+            rgba(255, 255, 255, 0.03) 30deg 60deg
+          ),
+          radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+          linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-tertiary) 100%);
         position: relative;
         animation: disc-spin 8s linear infinite;
+        box-shadow: 
+          inset 0 0 20px rgba(0, 0, 0, 0.5),
+          0 0 10px rgba(0, 0, 0, 0.3);
       }
       .cover-disc::before {
         content: '';
         position: absolute;
         inset: 20%;
         border-radius: 50%;
-        background: var(--accent);
+        background: 
+          radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+          var(--accent);
+        box-shadow: 0 0 8px var(--accent);
       }
       .cover-disc::after {
         content: '';
         position: absolute;
         inset: 35%;
         border-radius: 50%;
-        background: var(--bg-dark);
+        background: 
+          radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.2) 0%, transparent 60%),
+          var(--bg-dark);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8);
+      }
+      /* 唱片纹路效果 - 增强旋转可见性 */
+      .cover-disc .disc-groove {
+        position: absolute;
+        inset: 2px;
+        border-radius: 50%;
+        background: 
+          repeating-radial-gradient(
+            circle at center,
+            transparent 0px,
+            transparent 2px,
+            rgba(255, 255, 255, 0.02) 2px,
+            rgba(255, 255, 255, 0.02) 3px
+          );
+        pointer-events: none;
+      }
+      /* 唱片高光条纹 - 让旋转更明显 */
+      .cover-disc .disc-highlight {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: 
+          conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            rgba(255, 255, 255, 0.15) 10deg,
+            transparent 20deg,
+            transparent 180deg,
+            rgba(255, 255, 255, 0.08) 190deg,
+            transparent 200deg
+          );
+        pointer-events: none;
       }
       @keyframes disc-spin {
         to {
@@ -2038,6 +2095,7 @@
     </style>
   </head>
   <body>
+    <div class="bg-gradient"></div>
     <canvas id="bg-canvas"></canvas>
 
     <div class="app">
@@ -2171,7 +2229,10 @@
             <div class="cover-wrapper">
               <img id="cover-img" src="" alt="cover" />
               <div class="cover-placeholder">
-                <div class="cover-disc"></div>
+                <div class="cover-disc">
+                  <div class="disc-groove"></div>
+                  <div class="disc-highlight"></div>
+                </div>
                 <div data-i18n="coverHint">搜索并播放一首歌吧！</div>
               </div>
             </div>
@@ -2551,7 +2612,10 @@
             <div class="fullscreen-cover-wrapper">
               <img id="fullscreen-cover" class="fullscreen-cover" src="" alt="cover" />
               <div id="fullscreen-cover-placeholder" class="fullscreen-cover-placeholder">
-                <div class="cover-disc"></div>
+                <div class="cover-disc">
+                  <div class="disc-groove"></div>
+                  <div class="disc-highlight"></div>
+                </div>
               </div>
             </div>
             <div class="fullscreen-track-info">
@@ -3110,6 +3174,9 @@
             state.searchResults = []
             state.trackMap.clear()
             state.noMoreResults = false
+            
+            // 重置滚动条位置
+            dom.searchMiniList.scrollTop = 0
           }
 
           const kw = state.searchKeyword
@@ -3487,9 +3554,13 @@
               dom.coverImg.src = track.cover
               dom.coverImg.style.display = 'block'
               dom.coverPlaceholder.style.display = 'none'
+              // 根据封面图片更新粒子颜色
+              updateParticleColors(track.cover)
             } else {
               dom.coverImg.style.display = 'none'
               dom.coverPlaceholder.style.display = 'flex'
+              // 恢复默认粒子颜色
+              updateParticleColors(null)
             }
 
             // 同步更新全屏播放器UI
@@ -4152,6 +4223,123 @@
           searchAllSources(false)
         }
 
+        // 粒子颜色状态
+        let particleColors = {
+          baseHue: 150,
+          hueRange: 40,
+          lineColor: { r: 49, g: 194, b: 124 }
+        }
+
+        // 从图片提取主色调
+        function extractColorsFromImage(imgSrc) {
+          return new Promise((resolve) => {
+            const img = new Image()
+            img.crossOrigin = 'Anonymous'
+            img.onload = () => {
+              try {
+                const canvas = document.createElement('canvas')
+                const ctx = canvas.getContext('2d')
+                const size = 50
+                canvas.width = size
+                canvas.height = size
+                ctx.drawImage(img, 0, 0, size, size)
+                const data = ctx.getImageData(0, 0, size, size).data
+                
+                // 采样颜色，优先选择饱和度高的颜色
+                const colors = []
+                for (let i = 0; i < data.length; i += 16) {
+                  const r = data[i], g = data[i+1], b = data[i+2]
+                  const hsl = rgbToHsl(r, g, b)
+                  // 过滤过暗、过亮、饱和度过低的颜色
+                  if (hsl.l > 15 && hsl.l < 85 && hsl.s > 20) {
+                    colors.push({ r, g, b, h: hsl.h, s: hsl.s, l: hsl.l })
+                  }
+                }
+                
+                if (colors.length === 0) {
+                  resolve(null)
+                  return
+                }
+                
+                // 按饱和度排序，取最鲜艳的颜色
+                colors.sort((a, b) => b.s - a.s)
+                const topColors = colors.slice(0, Math.min(20, colors.length))
+                
+                // 使用环形平均计算 hue（解决 0/360 边界问题）
+                let sinSum = 0, cosSum = 0
+                let avgR = 0, avgG = 0, avgB = 0
+                topColors.forEach(c => {
+                  const rad = c.h * Math.PI / 180
+                  sinSum += Math.sin(rad)
+                  cosSum += Math.cos(rad)
+                  avgR += c.r
+                  avgG += c.g
+                  avgB += c.b
+                })
+                
+                const count = topColors.length
+                let avgHue = Math.atan2(sinSum / count, cosSum / count) * 180 / Math.PI
+                if (avgHue < 0) avgHue += 360
+                
+                resolve({
+                  baseHue: avgHue,
+                  lineColor: {
+                    r: Math.round(avgR / count),
+                    g: Math.round(avgG / count),
+                    b: Math.round(avgB / count)
+                  }
+                })
+              } catch (e) {
+                resolve(null)
+              }
+            }
+            img.onerror = () => resolve(null)
+            img.src = imgSrc
+          })
+        }
+
+        // RGB 转 HSL
+        function rgbToHsl(r, g, b) {
+          r /= 255; g /= 255; b /= 255
+          const max = Math.max(r, g, b), min = Math.min(r, g, b)
+          let h, s, l = (max + min) / 2
+          
+          if (max === min) {
+            h = s = 0
+          } else {
+            const d = max - min
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+            switch (max) {
+              case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break
+              case g: h = ((b - r) / d + 2) / 6; break
+              case b: h = ((r - g) / d + 4) / 6; break
+            }
+          }
+          return { h: h * 360, s: s * 100, l: l * 100 }
+        }
+
+        // 更新粒子颜色
+        async function updateParticleColors(coverUrl) {
+          if (!coverUrl) {
+            // 恢复默认颜色
+            particleColors = {
+              baseHue: 150,
+              hueRange: 40,
+              lineColor: { r: 49, g: 194, b: 124 }
+            }
+            return
+          }
+          
+          const colors = await extractColorsFromImage(coverUrl)
+          if (colors) {
+            particleColors = {
+              baseHue: colors.baseHue,
+              hueRange: 30,
+              lineColor: colors.lineColor
+            }
+          }
+        }
+
         function setupParticles() {
           const canvas = $('bg-canvas')
           const ctx = canvas.getContext('2d')
@@ -4164,17 +4352,17 @@
           resize()
           window.addEventListener('resize', resize)
           const parts = []
-          const N = 60
+          const N = 30
           for (let i = 0; i < N; i++) {
             parts.push({
               x: Math.random() * window.innerWidth,
               y: Math.random() * window.innerHeight,
-              vx: (Math.random() - 0.5) * 0.25,
-              vy: (Math.random() - 0.5) * 0.25,
-              r: 1 + Math.random() * 1.5,
-              baseR: 1 + Math.random() * 1.5,
-              hue: 150 + Math.random() * 40,
-              a: 0.15 + Math.random() * 0.2
+              vx: (Math.random() - 0.5) * 0.4,
+              vy: (Math.random() - 0.5) * 0.4,
+              r: 1 + Math.random() * 3,
+              baseR: 1 + Math.random() * 3,
+              hueOffset: Math.random() * 40 - 20,
+              a: 0.3 + Math.random() * 0.35
             })
           }
           let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 }
@@ -4188,7 +4376,6 @@
             for (const p of parts) {
               p.x += p.vx
               p.y += p.vy
-              p.hue += 0.02
               if (p.x < -40) p.x = window.innerWidth + 40
               if (p.x > window.innerWidth + 40) p.x = -40
               if (p.y < -40) p.y = window.innerHeight + 40
@@ -4199,13 +4386,30 @@
               const push = Math.max(0, 140 - dist) / 140
               p.x += dx * 0.008 * push
               p.y += dy * 0.008 * push
+              
+              // 使用从封面提取的颜色
+              const hue = particleColors.baseHue + p.hueOffset
+              
+              // 绘制发光效果
+              const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.baseR * pulse * 2)
+              const light = Math.min(70, 50 + audioLevel * 30)
+              gradient.addColorStop(0, `hsla(${hue},60%,${light}%,${p.a})`)
+              gradient.addColorStop(0.5, `hsla(${hue},50%,${light}%,${p.a * 0.5})`)
+              gradient.addColorStop(1, `hsla(${hue},40%,${light}%,0)`)
+              
               ctx.beginPath()
-              ctx.arc(p.x, p.y, p.baseR * pulse, 0, Math.PI * 2)
-              const light = Math.min(60, 45 + audioLevel * 30)
-              ctx.fillStyle = `hsla(${p.hue},50%,${light}%,${p.a})`
+              ctx.arc(p.x, p.y, p.baseR * pulse * 2, 0, Math.PI * 2)
+              ctx.fillStyle = gradient
+              ctx.fill()
+              
+              // 核心亮点
+              ctx.beginPath()
+              ctx.arc(p.x, p.y, p.baseR * pulse * 0.6, 0, Math.PI * 2)
+              ctx.fillStyle = `hsla(${hue},70%,80%,${p.a * 0.8})`
               ctx.fill()
             }
-            ctx.lineWidth = 0.3
+            ctx.lineWidth = 0.5
+            const lc = particleColors.lineColor
             for (let i = 0; i < parts.length; i++) {
               for (let j = i + 1; j < parts.length; j++) {
                 const a = parts[i],
@@ -4213,12 +4417,12 @@
                 const dx = a.x - b.x,
                   dy = a.y - b.y
                 const d = Math.sqrt(dx * dx + dy * dy)
-                if (d < 80) {
-                  const al = 0.08 * (1 - d / 80) * (0.5 + audioLevel * 1.2)
+                if (d < 100) {
+                  const al = 0.15 * (1 - d / 100) * (0.5 + audioLevel * 1.2)
                   ctx.beginPath()
                   ctx.moveTo(a.x, a.y)
                   ctx.lineTo(b.x, b.y)
-                  ctx.strokeStyle = `rgba(49,194,124,${al})`
+                  ctx.strokeStyle = `rgba(${lc.r},${lc.g},${lc.b},${al})`
                   ctx.stroke()
                 }
               }
