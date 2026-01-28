@@ -14,13 +14,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png" />
     <meta name="msapplication-TileColor" content="#31c27c" />
     <meta name="msapplication-TileImage" content="icons/icon-144x144.png" />
-    <!-- 圆润可爱字体 -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600&family=Nunito:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
     <!-- iconfont 图标 -->
     <script src="//at.alicdn.com/t/c/font_2994534_6rf8prcnbmh.js"></script>
     <style>
@@ -87,6 +80,35 @@
         z-index: 10001;
         pointer-events: none;
       }
+
+      /* 滚动公告条 - 简约风格 */
+      .marquee-notice {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 28px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-subtle);
+        z-index: 10002;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+      }
+      .marquee-content {
+        display: flex;
+        white-space: nowrap;
+        animation: marqueeScroll 30s linear infinite;
+      }
+      .marquee-content span {
+        padding: 0 80px;
+        color: var(--text-secondary);
+        font-size: 12px;
+      }
+      @keyframes marqueeScroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+      }
       
       /* 背景渐变层 */
       .bg-gradient {
@@ -104,8 +126,9 @@
         z-index: 1;
         display: flex;
         flex-direction: column;
-        height: calc(100vh - 40px);
+        height: calc(100vh - 40px - 28px);
         margin: 20px;
+        margin-top: calc(20px + 28px);
         padding: 0;
         gap: 0;
         border-radius: 12px;
@@ -118,20 +141,23 @@
       @media (max-width: 1280px) {
         .app {
           margin: 16px;
-          height: calc(100vh - 32px);
+          margin-top: calc(16px + 28px);
+          height: calc(100vh - 32px - 28px);
         }
       }
       @media (max-width: 900px) {
         .app {
           margin: 10px;
-          height: calc(100vh - 20px);
+          margin-top: calc(10px + 28px);
+          height: calc(100vh - 20px - 28px);
         }
       }
       @media (max-width: 860px) {
         .app {
           height: auto;
-          min-height: calc(100vh - 20px);
+          min-height: calc(100vh - 20px - 28px);
           margin: 10px;
+          margin-top: calc(10px + 28px);
           padding: 0;
         }
       }
@@ -503,6 +529,14 @@
         background: #ff6b9d;
         color: #ff6b9d;
       }
+      .source-dot.bodian {
+        background: #7c4dff;
+        color: #7c4dff;
+      }
+      .source-dot.playlist {
+        background: #4caf50;
+        color: #4caf50;
+      }
 
       .limit-row {
         display: flex;
@@ -576,6 +610,8 @@
         flex-direction: column;
         align-items: flex-end;
         gap: 4px;
+        /* 禁止压缩 */
+        flex-shrink: 0;
       }
       .mini-badge {
         font-size: 11px;
@@ -772,6 +808,7 @@
       .track-tags {
         display: flex;
         flex-wrap: wrap;
+        justify-content: center;
         gap: 6px;
         margin-top: 8px;
         font-size: 11px;
@@ -1158,6 +1195,338 @@
         z-index: 1;
       }
 
+      /* 推荐歌单样式 */
+      .recommend-playlists {
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px 0;
+      }
+      .recommend-playlists.show {
+        display: flex;
+      }
+      .recommend-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+      }
+      .recommend-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-main);
+      }
+      .recommend-refresh-btn {
+        border: none;
+        border-radius: 6px;
+        padding: 6px 12px;
+        background: var(--bg-dark);
+        color: var(--text-sub);
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .recommend-refresh-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-main);
+      }
+      .recommend-refresh-btn.loading {
+        pointer-events: none;
+        opacity: 0.6;
+      }
+      .recommend-refresh-btn .icon {
+        transition: transform 0.3s;
+      }
+      .recommend-refresh-btn.loading .icon {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      .recommend-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+      }
+      .recommend-card {
+        display: flex;
+        flex-direction: column;
+        border-radius: 8px;
+        background: var(--bg-dark);
+        border: 1px solid transparent;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .recommend-card:hover {
+        background: var(--bg-tertiary);
+        border-color: var(--border-subtle);
+        transform: translateY(-2px);
+      }
+      .recommend-card.active {
+        border-color: var(--accent);
+        background: rgba(49, 194, 124, 0.1);
+      }
+      .recommend-cover {
+        position: relative;
+        width: 100%;
+        padding-top: 100%;
+        background: var(--bg-tertiary);
+        overflow: hidden;
+      }
+      .recommend-cover img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .recommend-cover-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-dark) 100%);
+      }
+      .recommend-icon {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 48px;
+      }
+      .recommend-play-count {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .recommend-card-info {
+        padding: 8px;
+      }
+      .recommend-card-name {
+        font-size: 12px;
+        color: var(--text-main);
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: 33.6px;
+      }
+      .recommend-card-count {
+        font-size: 10px;
+        color: var(--text-sub);
+        margin-top: 4px;
+      }
+
+      /* 歌单详情弹窗样式 */
+      .playlist-detail-modal {
+        display: none;
+      }
+      .playlist-detail-modal.show {
+        display: flex;
+      }
+      .playlist-detail-content {
+        width: 100%;
+        max-width: 600px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #playlist-detail-body {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .playlist-detail-header {
+        display: flex;
+        gap: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+        flex-shrink: 0;
+      }
+      .playlist-detail-cover {
+        width: 120px;
+        height: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: var(--bg-dark);
+      }
+      .playlist-detail-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .playlist-detail-cover-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-dark) 100%);
+      }
+      .detail-icon {
+        font-size: 56px;
+      }
+      .playlist-detail-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .playlist-detail-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-main);
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .playlist-detail-desc {
+        font-size: 12px;
+        color: var(--text-sub);
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .playlist-detail-meta {
+        display: flex;
+        gap: 12px;
+        font-size: 11px;
+        color: var(--text-third);
+      }
+      .playlist-detail-actions {
+        margin-top: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .playlist-detail-tracks {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        margin-top: 12px;
+        padding-right: 4px;
+      }
+      .playlist-detail-track {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .playlist-detail-track:hover {
+        background: var(--bg-tertiary);
+      }
+      .playlist-detail-track.playing {
+        background: rgba(49, 194, 124, 0.1);
+      }
+      .playlist-detail-track-index {
+        width: 24px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-third);
+        flex-shrink: 0;
+      }
+      .playlist-detail-track-cover {
+        width: 40px;
+        height: 40px;
+        border-radius: 4px;
+        overflow: hidden;
+        flex-shrink: 0;
+        background: var(--bg-dark);
+      }
+      .playlist-detail-track-cover img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .playlist-detail-track-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .playlist-detail-track-name {
+        font-size: 13px;
+        color: var(--text-main);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .playlist-detail-track-artist {
+        font-size: 11px;
+        color: var(--text-sub);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .playlist-detail-track-duration {
+        font-size: 11px;
+        color: var(--text-third);
+        flex-shrink: 0;
+      }
+      .playlist-detail-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: var(--text-sub);
+        font-size: 13px;
+        gap: 12px;
+      }
+      .playlist-detail-loading .loading-spinner {
+        width: 32px;
+        height: 32px;
+        border: 3px solid var(--border-subtle);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @media (max-width: 860px) {
+        .recommend-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+      @media (max-width: 600px) {
+        .recommend-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .playlist-detail-header {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        .playlist-detail-cover {
+          width: 100px;
+          height: 100px;
+        }
+        .playlist-detail-actions {
+          justify-content: center;
+        }
+      }
+
       .track-item {
         display: grid;
         grid-template-columns: auto 1fr auto;
@@ -1377,6 +1746,16 @@
       .modal-backdrop.show {
         display: flex;
       }
+      
+      /* 添加到歌单弹窗 - 更高的 z-index */
+      #add-to-playlist-modal {
+        z-index: 2100;
+      }
+      
+      /* 新建歌单弹窗 - 最高的 z-index */
+      #playlist-modal {
+        z-index: 2200;
+      }
 
       .modal {
         background: var(--bg-secondary);
@@ -1568,8 +1947,9 @@
         }
         .app {
           height: auto;
-          min-height: calc(100vh - 20px);
+          min-height: calc(100vh - 20px - 28px);
           margin: 10px;
+          margin-top: calc(10px + 28px);
           padding: 0;
           overflow-x: hidden;
         }
@@ -2095,6 +2475,13 @@
     </style>
   </head>
   <body>
+    <!-- 滚动公告条 -->
+    <div class="marquee-notice">
+      <div class="marquee-content">
+        <span>公告：新增波点音乐源，支持VIP歌曲 | QQ音乐接口暂停服务</span>
+        <span>公告：新增波点音乐源，支持VIP歌曲 | QQ音乐接口暂停服务</span>
+      </div>
+    </div>
     <div class="bg-gradient"></div>
     <canvas id="bg-canvas"></canvas>
 
@@ -2170,15 +2557,21 @@
                 <input type="checkbox" data-source="netease" checked />
                 <span>网易云</span>
               </label>
-              <label class="source-chip ripple-target">
+              <!-- QQ音乐暂停服务，隐藏选项 -->
+              <label class="source-chip ripple-target" style="display:none;">
                 <span class="source-dot qq"></span>
-                <input type="checkbox" data-source="qq" checked />
+                <input type="checkbox" data-source="qq" />
                 <span>QQ</span>
               </label>
               <label class="source-chip ripple-target">
                 <span class="source-dot kuwo"></span>
                 <input type="checkbox" data-source="kuwo" checked />
                 <span>酷我</span>
+              </label>
+              <label class="source-chip ripple-target">
+                <span class="source-dot bodian"></span>
+                <input type="checkbox" data-source="bodian" checked />
+                <span>波点</span>
               </label>
             </div>
 
@@ -2393,6 +2786,13 @@
               >
                 自建歌单
               </div>
+              <div
+                class="playlist-tab"
+                data-tab="recommend"
+                data-i18n="tabRecommend"
+              >
+                推荐
+              </div>
             </div>
           </div>
 
@@ -2447,6 +2847,18 @@
               </div>
             </div>
             <div id="playlist-list" class="playlist-list"></div>
+            
+            <!-- 推荐歌单容器 -->
+            <div id="recommend-playlists" class="recommend-playlists">
+              <div class="recommend-header">
+                <span class="recommend-title" data-i18n="recommendTitle">热门歌单</span>
+                <button id="recommend-refresh-btn" class="recommend-refresh-btn ripple-target">
+                  <svg class="icon" aria-hidden="true"><use xlink:href="#icon-shuaxin"></use></svg>
+                  <span data-i18n="refreshBtn">换一批</span>
+                </button>
+              </div>
+              <div id="recommend-grid" class="recommend-grid"></div>
+            </div>
           </div>
         </section>
       </main>
@@ -2601,6 +3013,25 @@
       </div>
     </div>
 
+    <!-- 歌单详情弹窗 -->
+    <div id="playlist-detail-modal" class="modal-backdrop playlist-detail-modal">
+      <div class="modal playlist-detail-content ripple-target">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <div class="modal-title-icon">📀</div>
+            <span data-i18n="playlistDetailTitle">歌单详情</span>
+          </div>
+          <button id="playlist-detail-close" class="modal-close-btn">×</button>
+        </div>
+        <div id="playlist-detail-body">
+          <div class="playlist-detail-loading">
+            <div class="loading-spinner"></div>
+            <span data-i18n="loading">加载中...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 全屏播放页面 -->
     <div id="fullscreen-player" class="fullscreen-player">
       <div class="fullscreen-bg"></div>
@@ -2735,13 +3166,27 @@
             sourceNetease: '网易云',
             sourceQQ: 'QQ音乐',
             sourceKuwo: '酷我',
+            sourceBodian: '波点',
+            sourcePlaylist: '歌单',
             modalNewPlaylistTitle: '新建歌单',
             modalNewPlaylistDesc: '给你的歌单取一个可爱的名字吧～',
             modalAddToPlaylistTitle: '添加到歌单',
             modalAddToPlaylistDesc: '选择要添加到的歌单：',
             modalAddToPlaylistEmpty: '还没有歌单，先新建一个吧~',
             modalConfirm: '确定',
-            modalCancel: '取消'
+            modalCancel: '取消',
+            tabRecommend: '推荐',
+            recommendTitle: '热门歌单',
+            refreshBtn: '换一批',
+            playlistDetailTitle: '歌单详情',
+            loading: '加载中...',
+            playAll: '播放全部',
+            addAllToPlaylist: '添加全部',
+            trackCount: '首歌曲',
+            playCount: '播放',
+            toastRecommendLoadError: '加载推荐歌单失败，请稍后再试',
+            toastPlaylistDetailError: '加载歌单详情失败',
+            recommendEmpty: '暂无推荐歌单'
           },
           en: {
             appTitle: 'Mumu Music Station <img src="image/svip.png" alt="SVIP" style="height: 1em; vertical-align: middle; margin-left: 4px;" />',
@@ -2814,23 +3259,37 @@
             sourceNetease: 'Netease',
             sourceQQ: 'QQ Music',
             sourceKuwo: 'Kuwo',
+            sourceBodian: 'Bodian',
+            sourcePlaylist: 'Playlist',
             modalNewPlaylistTitle: 'Create Playlist',
             modalNewPlaylistDesc: 'Give your playlist a cute name!',
             modalAddToPlaylistTitle: 'Add to Playlist',
             modalAddToPlaylistDesc: 'Choose a playlist:',
             modalAddToPlaylistEmpty: 'No playlists yet. Create one first!',
             modalConfirm: 'Confirm',
-            modalCancel: 'Cancel'
+            modalCancel: 'Cancel',
+            tabRecommend: 'Hot',
+            recommendTitle: 'Hot Playlists',
+            refreshBtn: 'Refresh',
+            playlistDetailTitle: 'Playlist Details',
+            loading: 'Loading...',
+            playAll: 'Play All',
+            addAllToPlaylist: 'Add All',
+            trackCount: 'tracks',
+            playCount: 'plays',
+            toastRecommendLoadError: 'Failed to load playlists. Try again later.',
+            toastPlaylistDetailError: 'Failed to load playlist details',
+            recommendEmpty: 'No playlists available'
           }
         }
 
         const state = {
           language: 'zh',
-          enabledSources: { migu: true, netease: true, qq: true, kuwo: true },
+          enabledSources: { migu: true, netease: true, qq: false, kuwo: true, bodian: true },  // QQ音乐暂停服务
           perSourceLimit: 10,
-          perSourceCurrentLimit: { migu: 10, netease: 10, qq: 10, kuwo: 10 },
+          perSourceCurrentLimit: { migu: 10, netease: 10, qq: 10, kuwo: 10, bodian: 10 },
           // ✅ 仅为"正确加载更多（分页）"新增：网易云使用 page；其他源保持原逻辑（加大 num 再去重）
-          perSourcePage: { migu: 1, netease: 1, qq: 1, kuwo: 1 },
+          perSourcePage: { migu: 1, netease: 1, qq: 1, kuwo: 1, bodian: 1 },
 
           searchKeyword: '',
           searchResults: [],
@@ -2847,7 +3306,15 @@
           searchInProgress: false,
           noMoreResults: false,
           lyricsAlt: false,
-          muted: false
+          muted: false,
+          
+          // 推荐歌单相关状态
+          recommendPlaylists: [],
+          recommendLoading: false,
+          currentRecommendPlaylist: null,
+          recommendPlaylistTracks: [],
+          recommendPlaylistLoading: false,
+          activeTab: 'results'  // 当前激活的标签页
         }
 
         const dom = {}
@@ -2929,7 +3396,7 @@
         }
 
         function getInterleavedSearchList() {
-          const grouped = { migu: [], netease: [], qq: [], kuwo: [] }
+          const grouped = { migu: [], netease: [], qq: [], kuwo: [], bodian: [] }
           state.searchResults.forEach(t => {
             if (grouped[t.source]) grouped[t.source].push(t)
           })
@@ -2938,8 +3405,8 @@
               (a, b) => (a.displayIndex || 0) - (b.displayIndex || 0)
             )
           )
-          const order = ['migu', 'netease', 'qq', 'kuwo']
-          const idx = { migu: 0, netease: 0, qq: 0, kuwo: 0 }
+          const order = ['migu', 'netease', 'qq', 'kuwo', 'bodian']
+          const idx = { migu: 0, netease: 0, qq: 0, kuwo: 0, bodian: 0 }
           const out = []
           let added = true
           while (added) {
@@ -3096,44 +3563,49 @@
           return added
         }
 
-        async function searchQQKuwo(kw, limit, source) {
-          const url = `https://music-dl.sayqz.com/api?&type=search&keyword=${encodeURIComponent(
-            kw
-          )}&source=${encodeURIComponent(source)}&limit=${encodeURIComponent(
-            limit
-          )}`
+        // ✅ QQ音乐搜索 - 使用 Meting API
+        async function searchQQ(kw, page, limit) {
+          // Meting API 不支持分页，每次返回固定数量结果
+          const url = `https://api.i-meto.com/meting/api?server=tencent&type=search&id=${encodeURIComponent(kw)}`
           let added = 0
           try {
             const res = await fetch(url)
             const json = await res.json()
-            if (
-              json.code !== 200 ||
-              !json.data ||
-              !Array.isArray(json.data.results)
-            )
+            if (!Array.isArray(json) || json.length === 0)
               return 0
-            for (const it of json.data.results) {
-              const uid = `${source}-${it.id}`
+            
+            // 根据 page 和 limit 计算 offset
+            const offset = (page - 1) * limit
+            const items = json.slice(offset, offset + limit)
+            
+            for (const it of items) {
+              // 从 url 中提取 songmid
+              const urlMatch = it.url && it.url.match(/id=([^&]+)/)
+              const songmid = urlMatch ? urlMatch[1] : ''
+              if (!songmid) continue
+              
+              const uid = `qq-${songmid}`
               if (state.trackMap.has(uid)) continue
 
-              // ✅ 关键修改（必要）：酷我不直接用 search 返回的 url/lrc，
-              //    强制后续走 kw-api.cenguigui.cn 获取播放/下载链接与歌词
-              const forceKuwoDetail = source === 'kuwo'
+              // 从 pic url 中提取 albummid
+              const picMatch = it.pic && it.pic.match(/id=([^&]+)/)
+              const albummid = picMatch ? picMatch[1] : ''
 
               const track = {
                 uid,
-                source,
+                source: 'qq',
                 displayIndex: 0,
                 keyword: kw,
-                songid: it.id,
-                title: it.name || '',
-                artist: it.artist || '',
-                album: it.album || '',
+                songmid: songmid,
+                title: it.title || '',
+                artist: it.author || '',
+                album: '',
+                albummid: albummid,
                 cover: it.pic || null,
-                audioUrl: forceKuwoDetail ? null : it.url || null,
+                audioUrl: it.url || null,  // Meting 直接提供播放链接
                 lrc: null,
-                lrcUrl: forceKuwoDetail ? null : it.lrc || null,
-                detailsLoaded: forceKuwoDetail ? false : !!it.url,
+                lrcUrl: it.lrc || null,
+                detailsLoaded: false,
                 quality: 'normal'
               }
               state.trackMap.set(uid, track)
@@ -3141,9 +3613,447 @@
               added++
             }
           } catch (e) {
-            console.error(source, e)
+            console.error('qq', e)
           }
           return added
+        }
+
+        // ✅ 酷我音乐搜索 - 使用 kw-api.cenguigui.cn（支持 CORS）
+        async function searchKuwo(kw, page, limit) {
+          const url = `https://kw-api.cenguigui.cn/?name=${encodeURIComponent(kw)}&type=search&page=${page}&limit=${limit}&format=json`
+          let added = 0
+          try {
+            const res = await fetch(url)
+            const json = await res.json()
+            if (!json || json.code !== 200 || !Array.isArray(json.data))
+              return 0
+            for (const it of json.data) {
+              const songid = it.rid ? it.rid.toString() : ''
+              if (!songid) continue
+              const uid = `kuwo-${songid}`
+              if (state.trackMap.has(uid)) continue
+
+              const track = {
+                uid,
+                source: 'kuwo',
+                displayIndex: 0,
+                keyword: kw,
+                songid: songid,
+                title: (it.name || '').replace(/&nbsp;/g, ' '),
+                artist: (it.artist || '').replace(/&nbsp;/g, ' '),
+                album: (it.album || '').replace(/&nbsp;/g, ' '),
+                cover: it.pic || null,
+                audioUrl: null,  // 真实 URL 在 fetchKuwoDetails 中获取
+                lrc: null,
+                lrcUrl: it.lrc || null,
+                detailsLoaded: false,
+                quality: 'normal'
+              }
+              state.trackMap.set(uid, track)
+              state.searchResults.push(track)
+              added++
+            }
+          } catch (e) {
+            console.error('kuwo', e)
+          }
+          return added
+        }
+
+        // 波点音乐搜索函数
+        async function searchBodian(kw, page, limit) {
+          const url = `https://api.xcvts.cn/api/music/bdyy?msg=${encodeURIComponent(kw)}&p=${page}&sc=${limit}&type=json`
+          console.log('[bodian] search url:', url)
+          let added = 0
+          try {
+            const res = await fetch(url)
+            const json = await res.json()
+            console.log('[bodian] response:', json)
+            if (!json || json.code !== 200 || !Array.isArray(json.data)) {
+              console.log('[bodian] invalid response structure')
+              return 0
+            }
+            console.log('[bodian] data length:', json.data.length)
+            // 遍历搜索结果，索引从1开始
+            for (let i = 0; i < json.data.length; i++) {
+              const it = json.data[i]
+              const songName = it.name || ''
+              const songArtist = it.artist || ''
+              if (!songName) continue
+              // 计算实际序号：(页数-1) * 每页数量 + 当前索引 + 1
+              const realIndex = (page - 1) * limit + i + 1
+              const uid = `bodian-${kw}-${realIndex}`
+              if (state.trackMap.has(uid)) continue
+
+              const track = {
+                uid,
+                source: 'bodian',
+                displayIndex: realIndex,  // 用于获取详情的序号
+                keyword: kw,
+                title: songName,
+                artist: songArtist,
+                album: '',
+                cover: it.cover || null,
+                audioUrl: null,  // 真实 URL 在 fetchBodianDetails 中获取
+                lrc: null,
+                detailsLoaded: false,
+                quality: 'normal'
+              }
+              state.trackMap.set(uid, track)
+              state.searchResults.push(track)
+              added++
+            }
+            console.log('[bodian] added:', added)
+          } catch (e) {
+            console.error('[bodian] error:', e)
+          }
+          return added
+        }
+
+        // ========== 推荐歌单 API ==========
+        // 格式化播放次数
+        function formatPlayCount(count) {
+          if (!count) return '0'
+          const num = Number(count)
+          if (num >= 100000000) return (num / 100000000).toFixed(1) + '亿'
+          if (num >= 10000) return (num / 10000).toFixed(1) + '万'
+          return num.toString()
+        }
+
+        // 网易云真实榜单ID（使用 api.injahow.cn/meting）
+        const PRESET_PLAYLISTS = [
+          // 官方榜单
+          { id: 3778678, name: '热歌榜', icon: '🔥' },
+          { id: 19723756, name: '飙升榜', icon: '📈' },
+          { id: 3779629, name: '新歌榜', icon: '✨' },
+          { id: 2884035, name: '原创榜', icon: '🎤' },
+          { id: 991319590, name: '说唱榜', icon: '🎙️' },
+          { id: 71385702, name: 'ACG榜', icon: '🎮' },
+          // 用户创建/精选歌单
+          { id: 82791806, name: 'DJ电音', icon: '🎧' },
+          { id: 2908223832, name: '抖音热歌', icon: '📱' },
+          { id: 8480867704, name: '说唱精选', icon: '🎤' },
+          { id: 2387307412, name: '热门歌曲', icon: '💿' }
+        ]
+        
+        // 当前展示的歌单索引
+        let recommendPageIndex = 0
+
+        // 获取推荐歌单列表（直接使用预设）
+        function fetchRecommendPlaylists() {
+          if (state.recommendLoading) return
+          state.recommendLoading = true
+          const refreshBtn = $('recommend-refresh-btn')
+          if (refreshBtn) refreshBtn.classList.add('loading')
+          
+          state.recommendPlaylists = PRESET_PLAYLISTS.map(p => ({ ...p }))
+          renderRecommendPlaylists()
+          
+          state.recommendLoading = false
+          if (refreshBtn) refreshBtn.classList.remove('loading')
+        }
+
+        // 获取歌单详情 - 使用真实API
+        async function fetchPlaylistDetail(playlistId) {
+          state.recommendPlaylistLoading = true
+          state.currentRecommendPlaylist = { id: playlistId, loading: true }
+          state.recommendPlaylistTracks = []
+          
+          // 显示弹窗
+          const modal = $('playlist-detail-modal')
+          const body = $('playlist-detail-body')
+          if (modal) modal.classList.add('show')
+          if (body) {
+            body.innerHTML = `
+              <div class="playlist-detail-loading">
+                <div class="loading-spinner"></div>
+                <span>${t('loading')}</span>
+              </div>
+            `
+          }
+          
+          try {
+            const presetInfo = PRESET_PLAYLISTS.find(p => p.id == playlistId) || {}
+            
+            // 使用 api.injahow.cn/meting 获取真实歌单
+            const res = await fetch(`https://api.injahow.cn/meting/?type=playlist&id=${playlistId}`)
+            const json = await res.json()
+            
+            if (json && Array.isArray(json) && json.length > 0) {
+              const tracks = json.map((item, idx) => ({
+                uid: `netease-playlist-${playlistId}-${idx}-${Date.now()}`,
+                source: 'playlist',  // 标记为歌单来源，播放时会自动搜索其他源
+                songid: '',
+                title: item.name || '未知歌曲',
+                artist: item.artist || '未知歌手',
+                album: '',
+                cover: item.pic || null,
+                duration: 0,
+                audioUrl: null,  // 不使用meting URL，让播放时自动搜索
+                lrc: item.lrc || null,
+                detailsLoaded: false,  // 需要重新获取
+                quality: 'normal',
+                displayIndex: idx + 1
+              }))
+              
+              state.currentRecommendPlaylist = {
+                id: playlistId,
+                name: presetInfo.name || '歌单',
+                cover: tracks[0]?.cover || '',
+                icon: presetInfo.icon || '🎵',
+                description: '',
+                playCount: 0,
+                trackCount: tracks.length,
+                creator: ''
+              }
+              state.recommendPlaylistTracks = tracks
+              renderPlaylistDetailModal()
+            } else {
+              showToast(t('toastPlaylistDetailError'))
+              closePlaylistDetailModal()
+            }
+          } catch (e) {
+            console.error('[playlist detail] error:', e)
+            showToast(t('toastPlaylistDetailError'))
+            closePlaylistDetailModal()
+          } finally {
+            state.recommendPlaylistLoading = false
+          }
+        }
+
+        // 渲染推荐歌单列表
+        function renderRecommendPlaylists() {
+          const container = $('recommend-grid')
+          if (!container) return
+          
+          if (state.recommendPlaylists.length === 0) {
+            container.innerHTML = `<div class="recommend-empty">${t('recommendEmpty')}</div>`
+            return
+          }
+          
+          container.innerHTML = state.recommendPlaylists.map(pl => `
+            <div class="recommend-card ripple-target" data-playlist-id="${pl.id}">
+              <div class="recommend-cover recommend-cover-icon">
+                <span class="recommend-icon">${pl.icon || '🎵'}</span>
+              </div>
+              <div class="recommend-card-info">
+                <div class="recommend-card-name">${pl.name}</div>
+              </div>
+            </div>
+          `).join('')
+          
+          // 绑定点击事件
+          container.querySelectorAll('.recommend-card').forEach(card => {
+            card.addEventListener('click', () => {
+              const playlistId = card.dataset.playlistId
+              if (playlistId) fetchPlaylistDetail(playlistId)
+            })
+          })
+        }
+
+        // 渲染歌单详情弹窗
+        function renderPlaylistDetailModal() {
+          const body = $('playlist-detail-body')
+          if (!body || !state.currentRecommendPlaylist) return
+          
+          const pl = state.currentRecommendPlaylist
+          const tracks = state.recommendPlaylistTracks
+          
+          body.innerHTML = `
+            <div class="playlist-detail-header">
+              <div class="playlist-detail-cover ${!pl.cover ? 'playlist-detail-cover-icon' : ''}">
+                ${pl.cover 
+                  ? `<img src="${pl.cover}" alt="${pl.name}" onerror="this.parentElement.classList.add('playlist-detail-cover-icon');this.outerHTML='<span class=\\'detail-icon\\'>${pl.icon || '🎵'}</span>'" />`
+                  : `<span class="detail-icon">${pl.icon || '🎵'}</span>`
+                }
+              </div>
+              <div class="playlist-detail-info">
+                <div class="playlist-detail-name">${pl.name}</div>
+                ${pl.description ? `<div class="playlist-detail-desc">${pl.description}</div>` : ''}
+                <div class="playlist-detail-meta">
+                  <span>🎵 ${pl.trackCount} ${t('trackCount')}</span>
+                </div>
+                <div class="playlist-detail-actions">
+                  <button id="play-all-btn" class="btn ripple-target">${t('playAll')}</button>
+                  <button id="add-all-to-playlist-btn" class="btn btn-secondary ripple-target">${t('addAllToPlaylist')}</button>
+                </div>
+              </div>
+            </div>
+            <div class="playlist-detail-tracks">
+              ${tracks.slice(0, 100).map((track, idx) => `
+                <div class="playlist-detail-track ripple-target" data-track-index="${idx}">
+                  <div class="playlist-detail-track-index">${idx + 1}</div>
+                  <div class="playlist-detail-track-cover">
+                    ${track.cover 
+                      ? `<img src="${track.cover}" alt="" onerror="this.style.display='none'" />`
+                      : ''
+                    }
+                  </div>
+                  <div class="playlist-detail-track-info">
+                    <div class="playlist-detail-track-name">${track.title}</div>
+                    <div class="playlist-detail-track-artist">${track.artist}</div>
+                  </div>
+                  ${track.duration > 0 ? `<div class="playlist-detail-track-duration">${formatTime(track.duration)}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          `
+          
+          // 播放全部按钮
+          const playAllBtn = $('play-all-btn')
+          if (playAllBtn) {
+            playAllBtn.addEventListener('click', () => {
+              playRecommendPlaylist(0)
+            })
+          }
+          
+          // 添加全部到歌单按钮
+          const addAllBtn = $('add-all-to-playlist-btn')
+          if (addAllBtn) {
+            addAllBtn.addEventListener('click', () => {
+              showAddAllToPlaylistModal()
+            })
+          }
+          
+          // 单曲点击
+          body.querySelectorAll('.playlist-detail-track').forEach(el => {
+            el.addEventListener('click', () => {
+              const idx = parseInt(el.dataset.trackIndex)
+              playRecommendPlaylist(idx)
+            })
+          })
+        }
+
+        // 播放推荐歌单中的歌曲
+        async function playRecommendPlaylist(startIndex) {
+          if (state.recommendPlaylistTracks.length === 0) return
+          
+          // 将歌单歌曲添加到搜索结果中（如果不存在的话）
+          const tracks = state.recommendPlaylistTracks
+          tracks.forEach(track => {
+            if (!state.trackMap.has(track.uid)) {
+              state.trackMap.set(track.uid, track)
+              state.searchResults.push(track)
+            }
+          })
+          
+          // 设置播放上下文为推荐歌单
+          state.playContext = {
+            type: 'recommend',
+            index: startIndex,
+            playlistId: state.currentRecommendPlaylist?.id,
+            tracks: tracks
+          }
+          
+          // 关闭弹窗
+          closePlaylistDetailModal()
+          
+          // 播放选中的歌曲
+          const track = tracks[startIndex]
+          if (track) {
+            await playTrack(track)
+          }
+          
+          renderPlaylistList()
+          renderMiniSearchList()
+        }
+
+        // 关闭歌单详情弹窗
+        function closePlaylistDetailModal() {
+          const modal = $('playlist-detail-modal')
+          if (modal) modal.classList.remove('show')
+        }
+
+        // 显示"添加全部到歌单"弹窗
+        function showAddAllToPlaylistModal() {
+          const tracks = state.recommendPlaylistTracks
+          if (!tracks || tracks.length === 0) {
+            showToast(t('toastPlaylistEmpty'))
+            return
+          }
+          
+          // 临时存储待添加的歌曲
+          state.pendingAddAllTracks = tracks
+          
+          renderAddAllPlaylistChoices()
+          dom.addToPlaylistModal.classList.add('show')
+        }
+
+        // 渲染添加全部歌单选择
+        function renderAddAllPlaylistChoices() {
+          const wrap = dom.playlistChoices
+          wrap.innerHTML = ''
+          
+          if (!state.playlists.length) {
+            const empty = document.createElement('div')
+            empty.className = 'playlist-choices-empty'
+            empty.textContent = t('modalAddToPlaylistEmpty')
+            wrap.appendChild(empty)
+            return
+          }
+
+          state.playlists.forEach(pl => {
+            const item = document.createElement('div')
+            item.className = 'playlist-choice-item'
+            
+            const icon = document.createElement('span')
+            icon.className = 'choice-icon'
+            icon.textContent = '📁'
+            
+            const name = document.createElement('span')
+            name.textContent = pl.name
+            
+            const count = document.createElement('span')
+            count.className = 'choice-count'
+            count.textContent = pl.tracks.length + (state.language === 'zh' ? ' 首' : ' songs')
+            
+            item.appendChild(icon)
+            item.appendChild(name)
+            item.appendChild(count)
+            
+            item.addEventListener('click', () => {
+              addAllTracksToPlaylist(pl.id)
+            })
+            wrap.appendChild(item)
+          })
+        }
+
+        // 添加全部歌曲到指定歌单
+        function addAllTracksToPlaylist(plId) {
+          const tracks = state.pendingAddAllTracks
+          if (!tracks || tracks.length === 0) return
+          
+          const pl = state.playlists.find(p => p.id === plId)
+          if (!pl) return
+          
+          let addedCount = 0
+          tracks.forEach(track => {
+            // 检查是否已存在（通过标题和歌手判断）
+            const exists = pl.tracks.some(tk => 
+              tk.title === track.title && tk.artist === track.artist
+            )
+            if (!exists) {
+              pl.tracks.push({...track})
+              addedCount++
+            }
+          })
+          
+          savePlaylists()
+          closeAddToPlaylistModal()
+          closePlaylistDetailModal()
+          renderPlaylistList()
+          
+          if (addedCount > 0) {
+            showToast(state.language === 'zh' 
+              ? `已添加 ${addedCount} 首歌曲到「${pl.name}」`
+              : `Added ${addedCount} tracks to "${pl.name}"`)
+          } else {
+            showToast(state.language === 'zh' 
+              ? '歌曲已全部存在于歌单中'
+              : 'All tracks already in playlist')
+          }
+          
+          // 清理临时数据
+          state.pendingAddAllTracks = null
         }
 
         async function searchAllSources(reset) {
@@ -3196,8 +4106,35 @@
                 )
               )
 
-            if (s === 'qq') tasks.push(searchQQKuwo(kw, limit, 'qq'))
-            if (s === 'kuwo') tasks.push(searchQQKuwo(kw, limit, 'kuwo'))
+            // ✅ QQ音乐：用 page + limit
+            if (s === 'qq')
+              tasks.push(
+                searchQQ(
+                  kw,
+                  state.perSourcePage.qq || 1,
+                  state.perSourceLimit
+                )
+              )
+
+            // ✅ 酷我音乐：用 page + limit
+            if (s === 'kuwo')
+              tasks.push(
+                searchKuwo(
+                  kw,
+                  state.perSourcePage.kuwo || 1,
+                  state.perSourceLimit
+                )
+              )
+
+            // ✅ 波点音乐：用 page + limit
+            if (s === 'bodian')
+              tasks.push(
+                searchBodian(
+                  kw,
+                  state.perSourcePage.bodian || 1,
+                  state.perSourceLimit
+                )
+              )
           }
           let added = 0
           try {
@@ -3249,8 +4186,14 @@
           if (track.lrcUrl && !track.lrc) {
             try {
               const r = await fetch(track.lrcUrl)
-              track.lrc = await r.text()
-            } catch (e) {}
+              const lrcText = await r.text()
+              // 验证是否是有效的LRC歌词
+              if (lrcText && !lrcText.startsWith('<') && !lrcText.startsWith('{')) {
+                track.lrc = lrcText
+              }
+            } catch (e) {
+              console.warn('migu lrc fetch failed:', e)
+            }
           }
         }
 
@@ -3293,39 +4236,109 @@
           track.detailsLoaded = true
         }
 
+        // ✅ QQ音乐获取详情（播放链接和歌词）- 使用 Meting API
         async function fetchQQDetails(track) {
-          if (track.lrcUrl && !track.lrc) {
+          // 1) 获取播放链接 - audioUrl 存的是 Meting API 地址，需要解析获取实际 URL
+          if (track.audioUrl && track.audioUrl.includes('api.i-meto.com')) {
             try {
-              const r = await fetch(track.lrcUrl)
-              track.lrc = await r.text()
-            } catch (e) {}
+              const urlRes = await fetch(track.audioUrl)
+              const urlText = await urlRes.text()
+              // Meting 返回的是直接的音频 URL 或者空字符串（无版权）
+              if (urlText && urlText.startsWith('http')) {
+                track.audioUrl = urlText
+              } else {
+                // 如果 Meting 返回空，清空 audioUrl
+                track.audioUrl = null
+              }
+            } catch (e) {
+              console.warn('qq play url fetch failed', e)
+              track.audioUrl = null
+            }
           }
+
+          // 2) 获取歌词
+          if (!track.lrc && track.lrcUrl) {
+            try {
+              const lrcRes = await fetch(track.lrcUrl)
+              const lrcText = await lrcRes.text()
+              if (lrcText && !lrcText.startsWith('{') && !lrcText.startsWith('<')) {
+                track.lrc = lrcText
+              }
+            } catch (e) {
+              console.warn('qq lyric fetch failed', e)
+            }
+          }
+          
           track.detailsLoaded = true
         }
 
-        // ✅ 关键新增：酷我播放/下载/歌词用 kw-api.cenguigui.cn
+        // ✅ 酷我播放/下载/歌词 - 使用 kw-api.cenguigui.cn
         async function fetchKuwoDetails(track) {
-          const api = `https://kw-api.cenguigui.cn/?id=${encodeURIComponent(
-            track.songid
-          )}&type=song&level=zp&format=json`
-          const res = await fetch(api)
-          const j = await res.json()
-          if (!j || j.code !== 200 || !j.data)
-            throw new Error('kuwo kw-api detail failed')
+          // 获取真实的音频 URL（使用 format=json 返回直接链接，避免 302 重定向问题）
+          try {
+            const api = `https://kw-api.cenguigui.cn/?id=${encodeURIComponent(
+              track.songid
+            )}&type=song&level=exhigh&format=json`
+            const res = await fetch(api)
+            const json = await res.json()
+            if (json && json.code === 200 && json.data) {
+              // 获取真实音频 URL
+              if (json.data.url) {
+                track.audioUrl = json.data.url
+              }
+              // 同时获取歌词（如果 API 返回了）
+              if (!track.lrc && json.data.lyric) {
+                track.lrc = json.data.lyric
+              }
+              // 更新封面（如果有更高质量的）
+              if (json.data.pic) {
+                track.cover = json.data.pic
+              }
+            }
+          } catch (e) {
+            console.warn('kuwo detail fetch failed', e)
+          }
 
-          const d = j.data
-          const actual = d.level && d.level.actual ? d.level.actual : ''
-          Object.assign(track, {
-            title: d.name || track.title,
-            artist: d.artist || track.artist,
-            album: d.album || track.album,
-            cover: d.pic || track.cover,
-            audioUrl: d.url || track.audioUrl,
-            lrc: d.lyric || track.lrc || null,
-            lrcUrl: null, // kw-api 已直接返回 lyric 字符串
-            quality: kuwoQualityToTag(d.quality, d.url, actual),
-            detailsLoaded: true
-          })
+          // 如果上面没获取到歌词，尝试单独获取
+          if (!track.lrc && track.lrcUrl) {
+            try {
+              const lrcRes = await fetch(track.lrcUrl)
+              const lrcJson = await lrcRes.json()
+              if (lrcJson && lrcJson.code === 200 && lrcJson.data) {
+                track.lrc = lrcJson.data
+              }
+            } catch (e) {
+              console.warn('kuwo lyric fetch failed', e)
+            }
+          }
+
+          track.detailsLoaded = true
+        }
+
+        // 波点音乐详情获取函数
+        async function fetchBodianDetails(track) {
+          try {
+            const url = `https://api.xcvts.cn/api/music/bdyy?msg=${encodeURIComponent(
+              track.keyword
+            )}&n=${track.displayIndex || 1}&type=json`
+            const res = await fetch(url)
+            const json = await res.json()
+            if (json && json.code === 200 && json.data) {
+              const d = json.data
+              if (d.play_url) {
+                track.audioUrl = d.play_url
+              }
+              if (d.cover) {
+                track.cover = d.cover
+              }
+              if (d.lrc) {
+                track.lrc = d.lrc
+              }
+            }
+          } catch (e) {
+            console.warn('bodian detail fetch failed', e)
+          }
+          track.detailsLoaded = true
         }
 
         async function ensureTrackDetails(track) {
@@ -3340,7 +4353,55 @@
           else if (track.source === 'netease') await fetchNeteaseDetails(track)
           else if (track.source === 'kuwo')
             await fetchKuwoDetails(track) // ✅ 酷我改这里
+          else if (track.source === 'bodian')
+            await fetchBodianDetails(track) // ✅ 波点音乐
+          else if (track.source === 'playlist')
+            await fetchPlaylistTrackDetails(track) // ✅ 歌单歌曲自动搜索
           else await fetchQQDetails(track)
+        }
+
+        // ✅ 歌单歌曲详情获取 - 使用咪咕API搜索完整歌曲
+        async function fetchPlaylistTrackDetails(track) {
+          const keyword = `${track.title} ${track.artist}`.trim()
+          if (!keyword) throw new Error('playlist track no keyword')
+          
+          // 使用与 fetchMiguDetails 相同的API
+          const url = `https://api.xcvts.cn/api/music/migu?gm=${encodeURIComponent(keyword)}&n=1&num=1&type=json`
+          try {
+            const res = await fetch(url)
+            const j = await res.json()
+            
+            if (j.code === 200 && j.music_url) {
+              track.title = j.title || track.title
+              track.artist = j.singer || track.artist
+              track.cover = j.cover || track.cover
+              track.audioUrl = j.music_url
+              track.lrcUrl = j.lrc_url || null
+              track.pageUrl = j.link || null
+              track.source = 'migu'
+              track.detailsLoaded = true
+              
+              // 获取歌词
+              if (track.lrcUrl && !track.lrc) {
+                try {
+                  const lrcRes = await fetch(track.lrcUrl)
+                  const lrcText = await lrcRes.text()
+                  // 验证是否是有效的LRC歌词（不是HTML或JSON）
+                  if (lrcText && !lrcText.startsWith('<') && !lrcText.startsWith('{')) {
+                    track.lrc = lrcText
+                  }
+                } catch (e) {
+                  console.warn('playlist lrc fetch failed:', e)
+                }
+              }
+              return
+            }
+          } catch (e) {
+            console.warn('playlist migu search failed:', e)
+          }
+          
+          track.detailsLoaded = true
+          throw new Error('playlist track not found')
         }
 
         function parseLRC(txt) {
@@ -3536,7 +4597,11 @@
                 ? 'sourceNetease'
                 : sk === 'qq'
                 ? 'sourceQQ'
-                : 'sourceKuwo'
+                : sk === 'kuwo'
+                ? 'sourceKuwo'
+                : sk === 'playlist'
+                ? 'sourcePlaylist'
+                : 'sourceBodian'
             dom.trackSourcePill.style.display = 'inline-flex'
             dom.trackSourcePill.className = 'source-pill source-' + sk
             dom.trackSourcePill.innerHTML = ''
@@ -3628,6 +4693,10 @@
             )
             return pl ? pl.tracks : []
           }
+          if (tp === 'recommend') {
+            // 推荐歌单播放上下文
+            return state.playContext.tracks || state.recommendPlaylistTracks
+          }
           return getInterleavedSearchList()
         }
 
@@ -3635,6 +4704,9 @@
           let list
           if (type === 'results') list = getInterleavedSearchList()
           else if (type === 'favorites') list = state.favorites
+          else if (type === 'recommend') {
+            list = state.playContext.tracks || state.recommendPlaylistTracks
+          }
           else {
             const pl = state.playlists.find(p => p.id === plId)
             list = pl ? pl.tracks : []
@@ -3645,7 +4717,13 @@
           }
           if (index < 0) index = list.length - 1
           if (index >= list.length) index = 0
-          state.playContext = { type, index, playlistId: plId || null }
+          
+          // 保存播放上下文，包括 tracks（对于 recommend 类型）
+          if (type === 'recommend') {
+            state.playContext = { type, index, playlistId: plId || null, tracks: list }
+          } else {
+            state.playContext = { type, index, playlistId: plId || null }
+          }
           playTrack(list[index], state.playContext)
         }
 
@@ -3856,7 +4934,19 @@
         function renderMiniSearchList() {
           const wrap = dom.searchMiniList
           wrap.innerHTML = ''
-          const out = getInterleavedSearchList()
+          
+          // 根据当前播放上下文决定显示哪个列表
+          let out = []
+          let listType = 'results'
+          
+          if (state.playContext.type === 'recommend' && state.playContext.tracks && state.playContext.tracks.length > 0) {
+            // 如果是歌单播放，显示歌单歌曲
+            out = state.playContext.tracks
+            listType = 'recommend'
+          } else {
+            out = getInterleavedSearchList()
+          }
+          
           out.forEach((track, i) => {
             const item = document.createElement('div')
             item.className = 'search-mini-item ripple-target'
@@ -3886,7 +4976,11 @@
                 ? 'sourceNetease'
                 : track.source === 'qq'
                 ? 'sourceQQ'
-                : 'sourceKuwo'
+                : track.source === 'kuwo'
+                ? 'sourceKuwo'
+                : track.source === 'playlist'
+                ? 'sourcePlaylist'
+                : 'sourceBodian'
             const txt = document.createElement('span')
             txt.textContent = t(key)
             src.appendChild(dot)
@@ -3896,9 +4990,13 @@
             item.appendChild(meta)
             item.appendChild(right)
             item.addEventListener('click', () => {
-              const visible = getInterleavedSearchList()
-              const idx = visible.findIndex(x => x.uid === track.uid)
-              playFromList('results', idx)
+              if (listType === 'recommend') {
+                playFromList('recommend', i)
+              } else {
+                const visible = getInterleavedSearchList()
+                const idx = visible.findIndex(x => x.uid === track.uid)
+                playFromList('results', idx)
+              }
             })
             wrap.appendChild(item)
           })
@@ -3987,7 +5085,11 @@
                 ? 'sourceNetease'
                 : track.source === 'qq'
                 ? 'sourceQQ'
-                : 'sourceKuwo'
+                : track.source === 'kuwo'
+                ? 'sourceKuwo'
+                : track.source === 'playlist'
+                ? 'sourcePlaylist'
+                : 'sourceBodian'
             const txt = document.createElement('span')
             txt.textContent = t(key)
             sSpan.appendChild(dot)
@@ -4064,12 +5166,16 @@
             showToast(t('toastNoCurrentTrack'))
             return
           }
+          // 清理"添加全部"模式的临时数据
+          state.pendingAddAllTracks = null
           renderPlaylistChoices()
           dom.addToPlaylistModal.classList.add('show')
         }
 
         function closeAddToPlaylistModal() {
           dom.addToPlaylistModal.classList.remove('show')
+          // 清理"添加全部"模式的临时数据
+          state.pendingAddAllTracks = null
         }
 
         function renderPlaylistChoices() {
@@ -4587,10 +5693,10 @@
             }
 
             enabled.forEach(s => {
-              if (s === 'netease') {
-                // ✅ 网易云：正确分页
-                state.perSourcePage.netease =
-                  (state.perSourcePage.netease || 1) + 1
+              if (s === 'netease' || s === 'bodian') {
+                // ✅ 网易云和波点：正确分页
+                state.perSourcePage[s] =
+                  (state.perSourcePage[s] || 1) + 1
               } else {
                 state.perSourceCurrentLimit[s] =
                   (state.perSourceCurrentLimit[s] || state.perSourceLimit) +
@@ -4693,20 +5799,61 @@
                 .querySelectorAll('.playlist-tab')
                 .forEach(el => el.classList.toggle('active', el === tab))
               const tName = tab.dataset.tab
-              if (tName === 'results') {
-                state.playContext.type = 'results'
-                state.playContext.playlistId = null
-              } else if (tName === 'favorites') {
-                state.playContext.type = 'favorites'
-                state.playContext.playlistId = null
+              state.activeTab = tName
+              
+              // 隐藏/显示推荐歌单容器
+              const recommendContainer = $('recommend-playlists')
+              const playlistList = $('playlist-list')
+              const playlistBar = document.querySelector('.playlist-bar')
+              
+              if (tName === 'recommend') {
+                // 显示推荐歌单
+                if (recommendContainer) recommendContainer.classList.add('show')
+                if (playlistList) playlistList.style.display = 'none'
+                if (playlistBar) playlistBar.style.display = 'none'
+                // 首次加载推荐歌单
+                if (state.recommendPlaylists.length === 0 && !state.recommendLoading) {
+                  fetchRecommendPlaylists()
+                }
               } else {
-                state.playContext.type = 'playlist'
-                if (state.playlists.length && !state.playContext.playlistId)
-                  state.playContext.playlistId = state.playlists[0].id
+                // 隐藏推荐歌单
+                if (recommendContainer) recommendContainer.classList.remove('show')
+                if (playlistList) playlistList.style.display = ''
+                if (playlistBar) playlistBar.style.display = ''
+                
+                if (tName === 'results') {
+                  state.playContext.type = 'results'
+                  state.playContext.playlistId = null
+                } else if (tName === 'favorites') {
+                  state.playContext.type = 'favorites'
+                  state.playContext.playlistId = null
+                } else if (tName === 'playlists') {
+                  state.playContext.type = 'playlist'
+                  if (state.playlists.length && !state.playContext.playlistId)
+                    state.playContext.playlistId = state.playlists[0].id
+                }
+                renderPlaylistList()
               }
-              renderPlaylistList()
             })
           })
+          
+          // 推荐歌单刷新按钮
+          const recommendRefreshBtn = $('recommend-refresh-btn')
+          if (recommendRefreshBtn) {
+            recommendRefreshBtn.addEventListener('click', fetchRecommendPlaylists)
+          }
+          
+          // 歌单详情弹窗关闭按钮
+          const playlistDetailClose = $('playlist-detail-close')
+          const playlistDetailModal = $('playlist-detail-modal')
+          if (playlistDetailClose) {
+            playlistDetailClose.addEventListener('click', closePlaylistDetailModal)
+          }
+          if (playlistDetailModal) {
+            playlistDetailModal.addEventListener('click', e => {
+              if (e.target === playlistDetailModal) closePlaylistDetailModal()
+            })
+          }
 
           dom.newPlaylistBtn.addEventListener('click', openPlaylistModal)
           dom.playlistConfirmBtn.addEventListener('click', createPlaylist)
