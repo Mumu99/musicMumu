@@ -4778,10 +4778,28 @@
             showToast(t('toastDownloadNotReady'))
             return
           }
-          // 直接在新标签页打开音频链接，浏览器自动处理播放/下载，避开 CORS
-          window.open(tr.audioUrl, '_blank')
-          showDownloadToast(state.language === 'zh'
-            ? '正在打开音频...' : 'Opening audio...')
+
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+          const fileName = `${tr.title || 'Unknown'} - ${tr.artist || 'Unknown'}.mp3`
+            .replace(/[\\/:*?"<>|]/g, '_')
+
+          if (isMobile) {
+            // 手机端：用 <a download> 触发下载（Chrome Android 支持跨域 mp3 下载）
+            const a = document.createElement('a')
+            a.href = tr.audioUrl
+            a.download = fileName
+            a.style.display = 'none'
+            document.body.appendChild(a)
+            a.click()
+            setTimeout(() => document.body.removeChild(a), 100)
+            showDownloadToast(state.language === 'zh'
+              ? '正在下载...' : 'Downloading...')
+          } else {
+            // 桌面端：新标签页打开，右键可另存为
+            window.open(tr.audioUrl, '_blank')
+            showDownloadToast(state.language === 'zh'
+              ? '正在打开音频...' : 'Opening audio...')
+          }
         }
 
         function addCurrentToPlaylist() {
