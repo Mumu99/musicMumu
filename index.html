@@ -2478,8 +2478,8 @@
     <!-- 滚动公告条 -->
     <div class="marquee-notice">
       <div class="marquee-content">
-        <span>公告：新增波点音乐源，支持VIP歌曲 | QQ音乐接口暂停服务</span>
-        <span>公告：新增波点音乐源，支持VIP歌曲 | QQ音乐接口暂停服务</span>
+        <span>公告：新增波点音乐源 + QQ音乐源已恢复！</span>
+        <span>公告：新增波点音乐源 + QQ音乐源已恢复！</span>
       </div>
     </div>
     <div class="bg-gradient"></div>
@@ -2557,10 +2557,9 @@
                 <input type="checkbox" data-source="netease" checked />
                 <span>网易云</span>
               </label>
-              <!-- QQ音乐暂停服务，隐藏选项 -->
-              <label class="source-chip ripple-target" style="display:none;">
+              <label class="source-chip ripple-target">
                 <span class="source-dot qq"></span>
-                <input type="checkbox" data-source="qq" />
+                <input type="checkbox" data-source="qq" checked />
                 <span>QQ</span>
               </label>
               <label class="source-chip ripple-target">
@@ -3285,7 +3284,7 @@
 
         const state = {
           language: 'zh',
-          enabledSources: { migu: true, netease: true, qq: false, kuwo: true, bodian: true },  // QQ音乐暂停服务
+          enabledSources: { migu: true, netease: true, qq: true, kuwo: true, bodian: true },
           perSourceLimit: 10,
           perSourceCurrentLimit: { migu: 10, netease: 10, qq: 10, kuwo: 10, bodian: 10 },
           // ✅ 仅为"正确加载更多（分页）"新增：网易云使用 page；其他源保持原逻辑（加大 num 再去重）
@@ -3563,57 +3562,52 @@
           return added
         }
 
-        // ✅ QQ音乐搜索 - 使用 Meting API
+        // ✅ QQ音乐搜索 - 使用 tang.api 接口（稳定可用）
         async function searchQQ(kw, page, limit) {
-          // Meting API 不支持分页，每次返回固定数量结果
-          const url = `https://api.i-meto.com/meting/api?server=tencent&type=search&id=${encodeURIComponent(kw)}`
+          const url = `https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(kw)}&type=json`
           let added = 0
           try {
             const res = await fetch(url)
             const json = await res.json()
-            if (!Array.isArray(json) || json.length === 0)
-              return 0
-            
+            // 兼容：直接数组 或 { data: [...] }
+            const data = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : [])
+            if (!Array.isArray(data) || data.length === 0) return 0
+
             // 根据 page 和 limit 计算 offset
             const offset = (page - 1) * limit
-            const items = json.slice(offset, offset + limit)
-            
-            for (const it of items) {
-              // 从 url 中提取 songmid
-              const urlMatch = it.url && it.url.match(/id=([^&]+)/)
-              const songmid = urlMatch ? urlMatch[1] : ''
-              if (!songmid) continue
-              
-              const uid = `qq-${songmid}`
-              if (state.trackMap.has(uid)) continue
+            const items = data.slice(offset, offset + limit)
 
-              // 从 pic url 中提取 albummid
-              const picMatch = it.pic && it.pic.match(/id=([^&]+)/)
-              const albummid = picMatch ? picMatch[1] : ''
+            items.forEach((it) => {
+              const songmid = it.song_mid
+              if (!songmid) return
+
+              const uid = `qq-${songmid}`
+              if (state.trackMap.has(uid)) return
 
               const track = {
                 uid,
                 source: 'qq',
                 displayIndex: 0,
                 keyword: kw,
-                songmid: songmid,
-                title: it.title || '',
-                artist: it.author || '',
+                songMid: songmid,
+                songid: songmid,
+                title: it.song_title || '',
+                artist: it.singer_name || '',
                 album: '',
-                albummid: albummid,
-                cover: it.pic || null,
-                audioUrl: it.url || null,  // Meting 直接提供播放链接
+                cover: it.album_pic || null,
+                audioUrl: null,   // 搜索阶段无 url，详情再取
                 lrc: null,
-                lrcUrl: it.lrc || null,
+                lrcUrl: null,
                 detailsLoaded: false,
-                quality: 'normal'
+                quality: null,
+                pay: it.pay || null
               }
               state.trackMap.set(uid, track)
               state.searchResults.push(track)
               added++
-            }
+            })
           } catch (e) {
-            console.error('qq', e)
+            console.error('qq search failed', e)
           }
           return added
         }
@@ -4236,40 +4230,36 @@
           track.detailsLoaded = true
         }
 
-        // ✅ QQ音乐获取详情（播放链接和歌词）- 使用 Meting API
+        // ✅ QQ音乐获取详情 - 使用 tang.api 接口（稳定可用，多音质回退）
         async function fetchQQDetails(track) {
-          // 1) 获取播放链接 - audioUrl 存的是 Meting API 地址，需要解析获取实际 URL
-          if (track.audioUrl && track.audioUrl.includes('api.i-meto.com')) {
-            try {
-              const urlRes = await fetch(track.audioUrl)
-              const urlText = await urlRes.text()
-              // Meting 返回的是直接的音频 URL 或者空字符串（无版权）
-              if (urlText && urlText.startsWith('http')) {
-                track.audioUrl = urlText
-              } else {
-                // 如果 Meting 返回空，清空 audioUrl
-                track.audioUrl = null
-              }
-            } catch (e) {
-              console.warn('qq play url fetch failed', e)
-              track.audioUrl = null
-            }
-          }
+          const msg = track.keyword || ''
+          // 新接口用 mid
+          const mid = (track.songMid || track.songid || '').toString().trim()
+          if (!mid) { track.detailsLoaded = true; return }
 
-          // 2) 获取歌词
-          if (!track.lrc && track.lrcUrl) {
-            try {
-              const lrcRes = await fetch(track.lrcUrl)
-              const lrcText = await lrcRes.text()
-              if (lrcText && !lrcText.startsWith('{') && !lrcText.startsWith('<')) {
-                track.lrc = lrcText
-              }
-            } catch (e) {
-              console.warn('qq lyric fetch failed', e)
-            }
+          try {
+            const url = `https://tang.api.s01s.cn/music_open_api.php?msg=${encodeURIComponent(msg)}&type=json&mid=${encodeURIComponent(mid)}`
+            const res = await fetch(url)
+            const d = await res.json()
+            if (!d || typeof d !== 'object' || !d.song_mid) throw new Error('qq detail invalid response')
+
+            // 更新基础信息
+            track.title   = d.song_title || d.song_name || track.title
+            track.artist  = d.singer_name || track.artist
+            track.album   = d.album_name || d.album_title || track.album || ''
+            track.cover   = d.album_pic || d.singer_pic || track.cover
+
+            // 按优先级选取最佳播放链接
+            const playUrl = d.song_play_url_sq || d.song_play_url_pq || d.song_play_url_hq || d.song_play_url_standard || d.song_play_url_fq || d.song_play_url
+            if (playUrl) track.audioUrl = playUrl
+
+            // 歌词
+            if (d.song_lyric || d.lyric) track.lrc = d.song_lyric || d.lyric
+
+            track.detailsLoaded = true
+          } catch (e) {
+            console.warn('qq detail (tang) failed', e)
           }
-          
-          track.detailsLoaded = true
         }
 
         // ✅ 酷我播放/下载/歌词 - 使用 kw-api.cenguigui.cn
@@ -4805,13 +4795,18 @@
           
           const fileName = `${tr.title || 'Unknown'} - ${tr.artist || 'Unknown'}.mp3`.replace(/[\\/:*?"<>|]/g, '_')
           
-          // 由于跨域限制，使用 CORS 代理来下载
-          // 这里使用公共的 CORS 代理服务
+          // 下载线路池：先尝试直连，再依次尝试代理
           const corsProxies = [
+            // 特殊占位：直连（不使用代理）
+            '__DIRECT__',
             'https://api.codetabs.com/v1/proxy?quest=',
             'https://corsproxy.io/?',
-            'https://api.allorigins.win/raw?url='
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.org/?',
           ]
+          
+          // 每个线路超时时间（毫秒）
+          const PROXY_TIMEOUT = 15000
           
           const downloadTitle = state.language === 'zh' ? '⏳ 正在下载...' : '⏳ Downloading...'
           showDownloadProgress(downloadTitle, 0)
@@ -4824,24 +4819,41 @@
             }
           }
           
+          // 简单下载：window.open 方式（如 1.html），作为最终保底
+          function fallbackOpenDownload() {
+            resetDownloadState()
+            window.open(tr.audioUrl, '_blank')
+            const fallbackMsg = state.language === 'zh' 
+              ? '已在新窗口打开音频链接，右键可另存为' 
+              : 'Opened audio in new tab, right-click to save'
+            showDownloadToast(fallbackMsg)
+          }
+          
           // 尝试使用代理下载
           async function tryDownloadWithProxy(proxyIndex = 0) {
             if (proxyIndex >= corsProxies.length) {
-              // 所有代理都失败了，回退到直接打开链接
-              resetDownloadState()
-              const fallbackMsg = state.language === 'zh' 
-                ? '无法直接下载，已在新窗口打开，请手动保存' 
-                : 'Cannot download directly, opened in new tab, please save manually'
-              showDownloadToast(fallbackMsg)
-              window.open(tr.audioUrl, '_blank')
+              // 所有线路均失败，用 window.open 保底
+              fallbackOpenDownload()
               return
             }
             
-            const proxyUrl = corsProxies[proxyIndex] + encodeURIComponent(tr.audioUrl)
+            const useDirect = corsProxies[proxyIndex] === '__DIRECT__'
+            const proxyUrl = useDirect
+              ? tr.audioUrl
+              : corsProxies[proxyIndex] + encodeURIComponent(tr.audioUrl)
+            
+            // 创建 AbortController 实现超时
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT)
             
             try {
-              const response = await fetch(proxyUrl)
-              if (!response.ok) throw new Error('Proxy request failed')
+              const response = await fetch(proxyUrl, {
+                signal: controller.signal,
+                mode: useDirect ? 'cors' : 'cors',
+                credentials: 'omit'
+              })
+              clearTimeout(timeoutId)
+              if (!response.ok) throw new Error('Request failed with status ' + response.status)
               
               // 获取文件大小用于计算进度
               const contentLength = response.headers.get('content-length')
@@ -4865,9 +4877,7 @@
                   const totalMB = (total / 1024 / 1024).toFixed(1)
                   showDownloadProgress(downloadTitle, percent, `${sizeMB} / ${totalMB} MB`)
                 } else {
-                  // 无法获取总大小时显示已下载大小，进度条动画
                   const sizeMB = (loaded / 1024 / 1024).toFixed(1)
-                  // 模拟进度（假设最大10MB）
                   const fakePercent = Math.min(95, Math.round((loaded / (10 * 1024 * 1024)) * 100))
                   showDownloadProgress(downloadTitle, fakePercent, `已下载 ${sizeMB} MB`)
                 }
@@ -4893,10 +4903,11 @@
               const successMsg = state.language === 'zh' ? '✅ 下载完成' : '✅ Download complete'
               showDownloadToast(successMsg)
             } catch (error) {
-              console.log(`Proxy ${proxyIndex + 1} failed, trying next...`)
+              clearTimeout(timeoutId)
+              console.log(`Line ${proxyIndex + 1}/${corsProxies.length} failed:`, error.message || error)
               const retryTitle = state.language === 'zh' 
-                ? `⏳ 切换下载线路...` 
-                : `⏳ Switching source...`
+                ? `⏳ 切换下载线路 ${proxyIndex + 2}/${corsProxies.length}...` 
+                : `⏳ Switching source ${proxyIndex + 2}/${corsProxies.length}...`
               showDownloadProgress(retryTitle, 0, `${proxyIndex + 2}/${corsProxies.length}`)
               tryDownloadWithProxy(proxyIndex + 1)
             }
@@ -5693,8 +5704,8 @@
             }
 
             enabled.forEach(s => {
-              if (s === 'netease' || s === 'bodian') {
-                // ✅ 网易云和波点：正确分页
+              if (s === 'netease' || s === 'bodian' || s === 'qq') {
+                // ✅ 网易云、波点和 QQ：正确分页
                 state.perSourcePage[s] =
                   (state.perSourcePage[s] || 1) + 1
               } else {
