@@ -4268,7 +4268,7 @@
           try {
             const api = `https://kw-api.cenguigui.cn/?id=${encodeURIComponent(
               track.songid
-            )}&type=song&level=exhigh&format=json`
+            )}&type=song&level=zp&format=json`
             const res = await fetch(api)
             const json = await res.json()
             if (json && json.code === 200 && json.data) {
@@ -4774,14 +4774,136 @@
 
         function handleDownloadCurrent() {
           const tr = state.currentTrack
-          if (!tr || !tr.audioUrl) {
+          if (!tr) {
             showToast(t('toastDownloadNotReady'))
             return
           }
-          // 直接在新标签页打开音频链接，浏览器自动处理播放/下载，避开 CORS
-          showDownloadToast(state.language === 'zh'
-            ? '正在打开音频...' : 'Opening audio...')
-          window.open(tr.audioUrl, '_blank')
+
+          // 防止重复点击
+          if (state.isDownloading) {
+            const busyMsg = state.language === 'zh' ? '正在下载中，请稍候...' : 'Download in progress, please wait...'
+            showToast(busyMsg)
+            return
+          }
+          state.isDownloading = true
+
+          if (dom.downloadBtn) {
+            dom.downloadBtn.disabled = true
+            dom.downloadBtn.style.opacity = '0.5'
+          }
+
+          function resetDownloadState() {
+            state.isDownloading = false
+            if (dom.downloadBtn) {
+              dom.downloadBtn.disabled = false
+              dom.downloadBtn.style.opacity = '1'
+            }
+          }
+
+          // 1) 强制刷新音频 URL（避免过期）
+          const refreshTitle = state.language === 'zh' ? '⏳ 获取最新音频链接...' : '⏳ Refreshing audio link...'
+          showDownloadProgress(refreshTitle, 0)
+
+          const wasLoaded = tr.detailsLoaded
+          tr.detailsLoaded = false
+
+          ensureTrackDetails(tr).then(() => startDownload(tr)).catch(() => {
+            tr.detailsLoaded = wasLoaded
+            if (tr.audioUrl) startDownload(tr)
+            else { resetDownloadState(); showToast(t('toastDownloadNotReady')) }
+          })
+
+          // 2) 用 CORS 代理下载
+          function startDownload(track) {
+            const fileName = `${track.title || 'Unknown'} - ${track.artist || 'Unknown'}.mp3`.replace(/[\\/:*?"<>|]/g, '_')
+
+            const corsProxies = [
+              'https://api.allorigins.win/raw?url=',
+              'https://corsproxy.io/?',
+              'https://api.codetabs.com/v1/proxy?quest=',
+            ]
+
+            const PROXY_TIMEOUT = 15000
+            const downloadTitle = state.language === 'zh' ? '⏳ 正在下载...' : '⏳ Downloading...'
+            showDownloadProgress(downloadTitle, 0)
+
+            // 保底：新标签页打开
+            function fallbackOpenDownload() {
+              resetDownloadState()
+              window.open(track.audioUrl, '_blank')
+              const fallbackMsg = state.language === 'zh'
+                ? '已在新窗口打开音频链接，右键可另存为'
+                : 'Opened audio in new tab, right-click to save'
+              showDownloadToast(fallbackMsg)
+            }
+
+            async function tryDownload(proxyIndex = 0) {
+              if (proxyIndex >= corsProxies.length) {
+                fallbackOpenDownload()
+                return
+              }
+
+              const proxyUrl = corsProxies[proxyIndex] + encodeURIComponent(track.audioUrl)
+
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT)
+
+              try {
+                const response = await fetch(proxyUrl, {
+                  signal: controller.signal,
+                  mode: 'cors',
+                  credentials: 'omit'
+                })
+                clearTimeout(timeoutId)
+                if (!response.ok) throw new Error('HTTP ' + response.status)
+
+                const total = parseInt(response.headers.get('content-length') || '0', 10)
+                let loaded = 0
+                const reader = response.body.getReader()
+                const chunks = []
+
+                while (true) {
+                  const { done, value } = await reader.read()
+                  if (done) break
+                  chunks.push(value)
+                  loaded += value.length
+
+                  if (total > 0) {
+                    const pct = Math.round((loaded / total) * 100)
+                    const s = (loaded / 1024 / 1024).toFixed(1)
+                    const t2 = (total / 1024 / 1024).toFixed(1)
+                    showDownloadProgress(downloadTitle, pct, s + ' / ' + t2 + ' MB')
+                  } else {
+                    const s = (loaded / 1024 / 1024).toFixed(1)
+                    showDownloadProgress(downloadTitle, Math.min(95, Math.round((loaded / (10 * 1024 * 1024)) * 100)), '已下载 ' + s + ' MB')
+                  }
+                }
+
+                const blob = new Blob(chunks, { type: 'audio/mpeg' })
+                const blobUrl = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.style.display = 'none'
+                a.href = blobUrl
+                a.download = fileName
+                document.body.appendChild(a)
+                a.click()
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(blobUrl) }, 100)
+
+                resetDownloadState()
+                showDownloadToast(state.language === 'zh' ? '✅ 下载完成' : '✅ Download complete')
+              } catch (error) {
+                clearTimeout(timeoutId)
+                console.log('Proxy ' + (proxyIndex + 1) + '/' + corsProxies.length + ' failed:', error.message || error)
+                const retryTitle = state.language === 'zh'
+                  ? '⏳ 切换下载线路 ' + (proxyIndex + 2) + '/' + corsProxies.length + '...'
+                  : '⏳ Switching source ' + (proxyIndex + 2) + '/' + corsProxies.length + '...'
+                showDownloadProgress(retryTitle, 0, (proxyIndex + 2) + '/' + corsProxies.length)
+                tryDownload(proxyIndex + 1)
+              }
+            }
+
+            tryDownload()
+          }
         }
 
         function addCurrentToPlaylist() {
